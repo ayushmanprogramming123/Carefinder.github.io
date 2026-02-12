@@ -1,0 +1,30 @@
+{
+  "users": [
+    {
+      "id": "user_kiims_admin",
+      "name": "KIMS Admin",
+      "email": "kiims.admin@example.com",
+      "role": "hospital_staff",
+      "hospitalKey": "kiims",
+      "passwordHash": "$2a$10$U/VGHxk5FiDev93OVffA0ebICaovqIpagULPMVdjvQ0WSrlH.0/I."
+    }
+  ],
+  "hospitals": [
+    {
+      "key": "kiims",
+      "name": "Pradyumna Bal Memorial Hospital (Kalinga Inst Of Medical hospital)",
+      "aliases": [
+        "KIMS",
+        "KIIMS",
+        "Kalinga Institute of Medical Sciences"
+      ],
+      "normalizedName": "pradyumna bal memorial kalinga inst of medical",
+      "beds": {
+        "available": 23,
+        "capacity": 121,
+        "icu": 8,
+        "emergency": true
+      }
+    }
+  ]
+}

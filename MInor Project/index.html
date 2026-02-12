@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CareFinder • Hospital & Ambulance Platform</title>
+    <meta
+      name="description"
+      content="Find nearby hospitals and view bed availability. Use your location or choose a location."
+    />
+
+    <!-- Tailwind (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              calm: {
+                50: "#f2fbfb",
+                100: "#dcf4f4",
+                200: "#b9e7e9",
+                300: "#86d2d7",
+                400: "#4db8c0",
+                500: "#2f9aa3",
+                600: "#247b83",
+                700: "#21636a",
+                800: "#205158",
+                900: "#1f444b"
+              }
+            },
+            boxShadow: {
+              soft: "0 10px 30px rgba(16, 78, 82, 0.10)"
+            }
+          }
+        }
+      };
+    </script>
+
+    <style></style>
+  </head>
+
+  <body class="min-h-screen bg-gradient-to-b from-calm-50 via-white to-white text-slate-900">
+    <header class="sticky top-0 z-40 border-b border-calm-100 bg-white/80 backdrop-blur">
+      <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+        <div class="flex items-center gap-3">
+          <button
+            id="btnNavMenu"
+            type="button"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-calm-50 focus:outline-none focus:ring-2 focus:ring-calm-200"
+          >
+            <span class="sr-only">Open navigation</span>
+            <div class="flex flex-col gap-[3px] transition-transform duration-200" aria-hidden="true">
+              <span class="block h-0.5 w-4 rounded bg-slate-800"></span>
+              <span class="block h-0.5 w-4 rounded bg-slate-800"></span>
+              <span class="block h-0.5 w-4 rounded bg-slate-800"></span>
+            </div>
+          </button>
+          <div class="grid h-10 w-10 place-items-center rounded-xl bg-calm-100 text-calm-800 shadow-sm">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M12 2C9.24 2 7 4.24 7 7v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7c0-2.76-2.24-5-5-5Z"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+              <path d="M9 14h6M12 11v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <div class="text-base font-semibold leading-tight tracking-tight">CareFinder</div>
+              <span class="hidden rounded-full bg-calm-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-calm-700 sm:inline">
+                India only
+              </span>
+            </div>
+            <div class="text-xs text-slate-600">Structured hospital discovery & bed insights</div>
+          </div>
+        </div>
+
+        <nav class="hidden items-center gap-2 sm:flex">
+          <a href="#hero" class="rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-calm-50 hover:text-slate-900"
+            >Home</a
+          >
+          <a href="#features" class="rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-calm-50 hover:text-slate-900"
+            >Features</a
+          >
+          <a href="#about" class="rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-calm-50 hover:text-slate-900"
+            >About</a
+          >
+          <a href="./privacy.html" class="rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-calm-50 hover:text-slate-900"
+            >Privacy</a
+          >
+          <a href="./terms.html" class="rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-calm-50 hover:text-slate-900"
+            >Terms</a
+          >
+          <a
+            href="./ambulance.html"
+            class="ml-2 inline-flex items-center gap-1.5 rounded-lg border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-800 shadow-sm transition hover:bg-rose-100 hover:text-rose-900 focus:outline-none focus:ring-2 focus:ring-rose-200"
+          >
+            <span class="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
+            Book ambulance
+          </a>
+          <a
+            href="./admin.html"
+            class="ml-2 inline-flex items-center gap-1.5 rounded-lg border border-calm-200 bg-white px-3 py-2 text-xs font-semibold text-calm-800 shadow-sm transition hover:bg-calm-50 hover:text-calm-900 focus:outline-none focus:ring-2 focus:ring-calm-200"
+          >
+            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+            Staff login
+          </a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl px-4 pb-12">
+      <!-- Landing hero with slider -->
+      <section id="hero" class="pt-8 sm:pt-12">
+        <div class="grid gap-8 lg:grid-cols-12 lg:items-center">
+          <div class="lg:col-span-6">
+            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-calm-700">
+              CareFinder • India-first hospital access
+            </p>
+            <h1 class="mt-3 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
+              A calmer way to discover hospitals, beds, and ambulances.
+            </h1>
+            <p class="mt-3 text-sm leading-relaxed text-slate-600">
+              CareFinder connects patients with nearby hospitals, real-time bed availability, and emergency ambulances,
+              built for Indian cities and campuses. Designed for hospital administrators and students building a modern
+              Hospital Management System.
+            </p>
+            <div class="mt-5 flex flex-wrap gap-3 text-sm">
+              <a
+                href="#features"
+                class="inline-flex items-center justify-center rounded-xl bg-calm-600 px-4 py-2.5 font-semibold text-white shadow-sm transition hover:bg-calm-700 focus:outline-none focus:ring-2 focus:ring-calm-300"
+              >
+                Explore platform features
+              </a>
+              <a
+                href="#about"
+                class="inline-flex items-center justify-center rounded-xl border border-calm-200 bg-white px-4 py-2.5 font-semibold text-calm-800 shadow-sm transition hover:bg-calm-50 focus:outline-none focus:ring-2 focus:ring-calm-200"
+              >
+                Learn about CareFinder
+              </a>
+            </div>
+            <div class="mt-4 grid gap-2 text-xs text-slate-600 sm:grid-cols-3">
+              <div class="flex items-center gap-2">
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                <span>India-only hospital search</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                <span>Real-time bed updates from staff</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                <span>Live ambulance tracking (10‑min target)</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="lg:col-span-6">
+            <div
+              class="relative overflow-hidden rounded-2xl border border-calm-100 bg-gradient-to-br from-sky-50 via-white to-calm-50 p-3 shadow-soft"
+            >
+              <div class="flex items-center justify-between gap-2 px-1 pb-2">
+                <div class="text-xs font-semibold text-slate-700">Inside CareFinder</div>
+                <div class="flex gap-1">
+                  <span class="h-1.5 w-1.5 rounded-full bg-rose-400"></span>
+                  <span class="h-1.5 w-1.5 rounded-full bg-amber-400"></span>
+                  <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                </div>
+              </div>
+
+              <div id="heroSlider" class="relative h-56 overflow-hidden rounded-xl sm:h-64">
+                <div
+                  class="absolute inset-0 flex items-end justify-between gap-4 bg-cover bg-center transition-opacity duration-700"
+                  data-hero-slide="0"
+                  style="background-image: url('https://images.unsplash.com/photo-1584466977773-e625c37cdd50?auto=format&fit=crop&w=1200&q=80'); opacity: 1;"
+                >
+                  <div class="m-4 max-w-xs rounded-xl bg-slate-900/70 p-3 text-xs text-slate-100">
+                    <p class="font-semibold">Multi-speciality hospitals</p>
+                    <p class="mt-1 text-[11px] text-slate-200">
+                      Discover accredited hospitals near you with transparent capacity data.
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  class="absolute inset-0 flex items-end justify-between gap-4 bg-cover bg-center transition-opacity duration-700 opacity-0"
+                  data-hero-slide="1"
+                  style="background-image: url('https://images.unsplash.com/photo-1535916707207-35f97e715e1b?auto=format&fit=crop&w=1200&q=80');"
+                >
+                  <div class="m-4 max-w-xs rounded-xl bg-slate-900/70 p-3 text-xs text-slate-100">
+                    <p class="font-semibold">Doctors & clinical teams</p>
+                    <p class="mt-1 text-[11px] text-slate-200">
+                      Built to slot into your hospital workflows, not replace them.
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  class="absolute inset-0 flex items-end justify-between gap-4 bg-cover bg-center transition-opacity duration-700 opacity-0"
+                  data-hero-slide="2"
+                  style="background-image: url('https://images.unsplash.com/photo-1581090700227-1e37b190418e?auto=format&fit=crop&w=1200&q=80');"
+                >
+                  <div class="m-4 max-w-xs rounded-xl bg-slate-900/70 p-3 text-xs text-slate-100">
+                    <p class="font-semibold">Emergency ambulance network</p>
+                    <p class="mt-1 text-[11px] text-slate-200">
+                      Track vehicles live and guarantee a 10‑minute arrival SLA in your catchment.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-3 flex items-center justify-between gap-3">
+                <div class="flex gap-1.5">
+                  <button
+                    type="button"
+                    class="h-1.5 w-4 rounded-full bg-slate-900"
+                    data-hero-dot="0"
+                    aria-label="Hospital slide"
+                  ></button>
+                  <button
+                    type="button"
+                    class="h-1.5 w-4 rounded-full bg-slate-300"
+                    data-hero-dot="1"
+                    aria-label="Doctors slide"
+                  ></button>
+                  <button
+                    type="button"
+                    class="h-1.5 w-4 rounded-full bg-slate-300"
+                    data-hero-dot="2"
+                    aria-label="Ambulance slide"
+                  ></button>
+                </div>
+                <p class="text-[11px] text-slate-500">
+                  Images are illustrative only. Always validate hospital data with your own systems.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Features summary section -->
+      <section id="features" class="pt-10 sm:pt-12">
+        <div class="rounded-2xl border border-slate-200 bg-white/95 p-6 shadow-soft">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 class="text-lg font-semibold text-slate-900">Platform features</h2>
+              <p class="mt-1 text-sm text-slate-600">
+                CareFinder is organised into focused modules. Choose a module to continue; you won&apos;t trigger any
+                live actions from this landing page.
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-5 grid gap-4 sm:grid-cols-3">
+            <article class="flex flex-col rounded-2xl border border-calm-100 bg-calm-50/70 p-4 shadow-sm">
+              <div class="flex items-center gap-2">
+                <div class="grid h-8 w-8 place-items-center rounded-xl bg-calm-100 text-calm-800">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M5 10.5 10.5 5 19 13.5"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M5 19h14"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </div>
+                <h3 class="text-sm font-semibold text-slate-900">Hospital finder</h3>
+              </div>
+              <p class="mt-2 flex-1 text-xs text-slate-600">
+                Search hospitals across India, see distance, capacity, and detailed bed categories with indicative
+                pricing.
+              </p>
+              <a
+                href="./hospitals.html"
+                class="mt-3 inline-flex items-center justify-center rounded-xl bg-calm-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-calm-700 focus:outline-none focus:ring-2 focus:ring-calm-300"
+              >
+                Open hospital finder
+              </a>
+            </article>
+
+            <article class="flex flex-col rounded-2xl border border-sky-100 bg-sky-50/70 p-4 shadow-sm">
+              <div class="flex items-center gap-2">
+                <div class="grid h-8 w-8 place-items-center rounded-xl bg-sky-100 text-sky-700">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M4 10.5a3 3 0 0 1 3-3h7.17a3 3 0 0 1 2.12.88L20 11.1A3 3 0 0 1 20.88 13L21 16a2 2 0 0 1-2 2h-1.25"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                    />
+                    <path
+                      d="M4 10.5V17a2 2 0 0 0 2 2h1.25"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                    />
+                    <circle cx="8" cy="19" r="1.4" stroke="currentColor" stroke-width="1.2" />
+                    <circle cx="17" cy="19" r="1.4" stroke="currentColor" stroke-width="1.2" />
+                  </svg>
+                </div>
+                <h3 class="text-sm font-semibold text-slate-900">Emergency ambulance</h3>
+              </div>
+              <p class="mt-2 flex-1 text-xs text-slate-600">
+                Simulated ambulance booking with live vehicle tracking and a 10‑minute arrival target window.
+              </p>
+              <a
+                href="./ambulance.html"
+                class="mt-3 inline-flex items-center justify-center rounded-xl bg-sky-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-300"
+              >
+                Open ambulance module
+              </a>
+            </article>
+
+            <article class="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div class="flex items-center gap-2">
+                <div class="grid h-8 w-8 place-items-center rounded-xl bg-slate-100 text-slate-700">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M7 10v9m10-9v9M3 10h18L12 3 3 10Z"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+                <h3 class="text-sm font-semibold text-slate-900">Staff portal</h3>
+              </div>
+              <p class="mt-2 flex-1 text-xs text-slate-600">
+                Secure entry point for hospital staff to update total and available beds (per hospital) in real time.
+              </p>
+              <a
+                href="./admin.html"
+                class="mt-3 inline-flex items-center justify-center rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300"
+              >
+                Open staff portal
+              </a>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="about" class="mt-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="grid gap-6 sm:grid-cols-12 sm:items-start">
+          <div class="sm:col-span-7 space-y-4">
+            <div>
+              <h2 class="text-lg font-semibold">About CareFinder</h2>
+              <p class="mt-2 text-sm text-slate-600">
+                CareFinder started as a campus minor project to make hospital navigation less stressful for students and
+                families. It has since evolved into a modular sample HMS frontend that demonstrates how hospitals can
+                surface capacity information, coordinate ambulances, and keep staff workflows simple.
+              </p>
+              <p class="mt-2 text-sm text-slate-600">
+                The design emphasises a calm, clinical aesthetic: soft blues, rounded edges, and typography that feels
+                at home in a hospital environment. Every screen is optimised for both desktop and mobile, making it
+                suitable for reception desks, triage nurses, and patients on their phones.
+              </p>
+            </div>
+            <div>
+              <h3 class="text-sm font-semibold text-slate-900">Our Mission</h3>
+              <p class="mt-1.5 text-sm text-slate-600">
+                To reduce the anxiety of “where do we go now?” in medical emergencies by surfacing accurate, structured
+                hospital information—beds, departments, and ambulance access—in one place. The project focuses on making
+                it easy for hospital staff to keep this data current without disrupting their day.
+              </p>
+            </div>
+            <div>
+              <h3 class="text-sm font-semibold text-slate-900">Our Vision</h3>
+              <p class="mt-1.5 text-sm text-slate-600">
+                A connected network of Indian hospitals and ambulances where patients, families, and administrators
+                share the same live view of capacity and response times. CareFinder is intentionally lightweight so it
+                can act as the UI layer on top of any robust HMS or EMR backend you choose.
+              </p>
+            </div>
+          </div>
+          <div class="sm:col-span-5 space-y-4">
+            <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/60 shadow-soft">
+              <div class="grid gap-0 sm:grid-cols-2">
+                <div
+                  class="h-32 bg-cover bg-center sm:h-40"
+                  style="background-image:url('https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80');"
+                ></div>
+                <div
+                  class="hidden h-40 bg-cover bg-center sm:block"
+                  style="background-image:url('https://images.unsplash.com/photo-1582719478250-cc05afb6206e?auto=format&fit=crop&w=1200&q=80');"
+                ></div>
+              </div>
+              <div class="border-t border-slate-200 bg-white/70 px-4 py-3 text-xs text-slate-600">
+                <p class="font-semibold text-slate-900">Built around clinicians and patients</p>
+                <p class="mt-1">
+                  The UI is organised around real-world journeys: finding the right hospital, confirming capacity, and
+                  arranging safe transport.
+                </p>
+              </div>
+            </div>
+            <div class="rounded-2xl bg-gradient-to-br from-sky-50 via-white to-calm-50 p-5">
+              <div class="text-sm font-semibold text-slate-900">What this project includes</div>
+              <ul class="mt-3 list-disc space-y-1 pl-5 text-sm text-slate-700">
+                <li>India-only hospital search with map and filters</li>
+                <li>Staff portal for live bed availability updates</li>
+                <li>Emergency ambulance booking &amp; live tracking demo</li>
+                <li>Hospital detail pages with bed categories and pricing</li>
+                <li>Clean, responsive UI ready to extend with your APIs</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Slide-in navigation drawer -->
+    <div
+      id="navOverlay"
+      class="fixed inset-0 z-40 bg-slate-900/40 opacity-0 transition-opacity duration-300 pointer-events-none"
+    ></div>
+    <aside
+      id="navDrawer"
+      class="fixed inset-y-0 left-0 z-50 w-64 max-w-[80%] -translate-x-full transform bg-white shadow-xl ring-1 ring-slate-200 transition-transform duration-300"
+      aria-label="Main navigation"
+    >
+      <div class="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
+        <div class="flex items-center gap-2">
+          <div class="grid h-8 w-8 place-items-center rounded-lg bg-calm-50 text-calm-700">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M12 2C9.24 2 7 4.24 7 7v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7c0-2.76-2.24-5-5-5Z"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+              <path d="M9 14h6M12 11v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-slate-900">CareFinder</p>
+            <p class="text-[11px] text-slate-500">India-first HMS demo</p>
+          </div>
+        </div>
+        <button
+          id="btnNavClose"
+          type="button"
+          class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50"
+        >
+          <span class="sr-only">Close navigation</span>
+          ✕
+        </button>
+      </div>
+      <nav class="px-3 py-3 text-sm text-slate-800">
+        <a
+          href="./index.html#hero"
+          class="block rounded-lg px-3 py-2 hover:bg-calm-50 hover:text-calm-900"
+        >
+          Home
+        </a>
+        <a
+          href="./index.html#features"
+          class="mt-1 block rounded-lg px-3 py-2 hover:bg-calm-50 hover:text-calm-900"
+        >
+          Features
+        </a>
+        <a
+          href="./hospitals.html"
+          class="mt-1 block rounded-lg px-3 py-2 hover:bg-calm-50 hover:text-calm-900"
+        >
+          Hospital finder
+        </a>
+        <a
+          href="./index.html#about"
+          class="mt-1 block rounded-lg px-3 py-2 hover:bg-calm-50 hover:text-calm-900"
+        >
+          About
+        </a>
+        <a
+          href="./privacy.html"
+          class="mt-1 block rounded-lg px-3 py-2 hover:bg-calm-50 hover:text-calm-900"
+        >
+          Privacy policy
+        </a>
+        <a
+          href="./terms.html"
+          class="mt-1 block rounded-lg px-3 py-2 hover:bg-calm-50 hover:text-calm-900"
+        >
+          Terms &amp; conditions
+        </a>
+      </nav>
+    </aside>
+
+    <footer class="border-t border-calm-100 bg-white">
+      <div class="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+        <div>© <span id="yearSpan"></span> CareFinder. Built as a Hospital Management System demo project.</div>
+        <div class="flex flex-wrap gap-3">
+          <a href="#about" class="hover:text-slate-700">About us</a>
+          <a href="./privacy.html" class="hover:text-slate-700">Privacy policy</a>
+          <a href="./terms.html" class="hover:text-slate-700">Terms &amp; conditions</a>
+        </div>
+      </div>
+    </footer>
+
+    <script defer src="./landing.js"></script>
+    <script defer src="./navigation.js"></script>
+  </body>
+</html>
+

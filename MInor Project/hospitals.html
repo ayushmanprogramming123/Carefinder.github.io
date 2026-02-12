@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CareFinder • Hospital Finder</title>
+    <meta
+      name="description"
+      content="Discover nearby hospitals in India, view bed availability, and see bed categories with indicative pricing."
+    />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              calm: {
+                50: "#f2fbfb",
+                100: "#dcf4f4",
+                200: "#b9e7e9",
+                300: "#86d2d7",
+                400: "#4db8c0",
+                500: "#2f9aa3",
+                600: "#247b83",
+                700: "#21636a",
+                800: "#205158",
+                900: "#1f444b"
+              }
+            },
+            boxShadow: {
+              soft: "0 10px 30px rgba(16, 78, 82, 0.10)"
+            }
+          }
+        }
+      };
+    </script>
+
+    <!-- Leaflet (CDN) -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+
+    <style>
+      #map {
+        height: 360px;
+      }
+      @media (max-width: 640px) {
+        #map {
+          height: 300px;
+        }
+      }
+    </style>
+  </head>
+
+  <body class="min-h-screen bg-gradient-to-b from-calm-50 via-white to-white text-slate-900">
+    <header class="sticky top-0 z-40 border-b border-calm-100 bg-white/80 backdrop-blur">
+      <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+        <div class="flex items-center gap-3">
+          <button
+            id="btnNavMenu"
+            type="button"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-calm-50 focus:outline-none focus:ring-2 focus:ring-calm-200"
+          >
+            <span class="sr-only">Open navigation</span>
+            <div class="flex flex-col gap-[3px] transition-transform duration-200" aria-hidden="true">
+              <span class="block h-0.5 w-4 rounded bg-slate-800"></span>
+              <span class="block h-0.5 w-4 rounded bg-slate-800"></span>
+              <span class="block h-0.5 w-4 rounded bg-slate-800"></span>
+            </div>
+          </button>
+          <div class="grid h-10 w-10 place-items-center rounded-xl bg-calm-100 text-calm-800 shadow-sm">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M12 2C9.24 2 7 4.24 7 7v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7c0-2.76-2.24-5-5-5Z"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+              <path d="M9 14h6M12 11v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <div class="text-base font-semibold leading-tight tracking-tight">CareFinder</div>
+              <span class="hidden rounded-full bg-calm-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-calm-700 sm:inline">
+                India only
+              </span>
+            </div>
+            <div class="text-xs text-slate-600">Hospital finder &amp; bed insights</div>
+          </div>
+        </div>
+
+        <nav class="hidden items-center gap-2 sm:flex">
+          <a href="./index.html#hero" class="rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-calm-50 hover:text-slate-900"
+            >Home</a
+          >
+          <a
+            href="./hospitals.html"
+            class="rounded-lg px-3 py-2 text-sm font-semibold text-calm-800 hover:bg-calm-50 hover:text-calm-900"
+            >Hospital finder</a
+          >
+          <a
+            href="./index.html#about"
+            class="rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-calm-50 hover:text-slate-900"
+            >About</a
+          >
+          <a
+            href="./privacy.html"
+            class="rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-calm-50 hover:text-slate-900"
+            >Privacy</a
+          >
+          <a
+            href="./terms.html"
+            class="rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-calm-50 hover:text-slate-900"
+            >Terms</a
+          >
+          <a
+            href="./ambulance.html"
+            class="ml-2 inline-flex items-center gap-1.5 rounded-lg border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-800 shadow-sm transition hover:bg-rose-100 hover:text-rose-900 focus:outline-none focus:ring-2 focus:ring-rose-200"
+          >
+            <span class="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
+            Ambulance
+          </a>
+          <a
+            href="./admin.html"
+            class="ml-2 inline-flex items-center gap-1.5 rounded-lg border border-calm-200 bg-white px-3 py-2 text-xs font-semibold text-calm-800 shadow-sm transition hover:bg-calm-50 hover:text-calm-900 focus:outline-none focus:ring-2 focus:ring-calm-200"
+          >
+            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+            Staff login
+          </a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl px-4 pb-12">
+      <section class="pt-8 sm:pt-10">
+        <div class="grid gap-6 lg:grid-cols-12 lg:items-start">
+          <div class="lg:col-span-5">
+            <div class="rounded-2xl border border-calm-100 bg-white/90 p-5 shadow-soft sm:p-6">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-[0.15em] text-calm-700">
+                    Hospital finder
+                  </p>
+                  <h1 class="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
+                    Search hospitals and view capacity in real time
+                  </h1>
+                  <p class="mt-2 text-sm leading-relaxed text-slate-600">
+                    Choose a location or use your current location to see nearby hospitals, bed availability, and
+                    detailed bed categories with indicative pricing.
+                  </p>
+                </div>
+                <span
+                  class="hidden rounded-full bg-calm-100 px-3 py-1 text-xs font-medium text-calm-800 sm:inline-flex"
+                  >Patient‑facing view</span
+                >
+              </div>
+
+              <div class="mt-5 grid gap-4">
+                <div class="grid gap-2 sm:grid-cols-2">
+                  <button
+                    id="btnMyLocation"
+                    type="button"
+                    class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-calm-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-calm-700 focus:outline-none focus:ring-2 focus:ring-calm-300 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path
+                        d="M12 2v2m0 16v2m10-10h-2M4 12H2m15.07-7.07-1.41 1.41M8.34 15.66l-1.41 1.41m0-10.48 1.41 1.41m8.32 8.32 1.41 1.41M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                      />
+                    </svg>
+                    Use my location
+                  </button>
+
+                  <button
+                    id="btnRefresh"
+                    type="button"
+                    class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-calm-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-calm-50 focus:outline-none focus:ring-2 focus:ring-calm-200 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path
+                        d="M20 12a8 8 0 1 1-2.34-5.66M20 4v6h-6"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                    Refresh list
+                  </button>
+                </div>
+
+                <div>
+                  <label for="locationInput" class="text-sm font-medium text-slate-800">Choose a location</label>
+                  <div class="mt-2 flex flex-col gap-2 sm:flex-row">
+                    <div class="relative flex-1">
+                      <input
+                        id="locationInput"
+                        type="text"
+                        inputmode="search"
+                        placeholder="Type an Indian city / area (e.g., 'Andheri, Mumbai')"
+                        class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-calm-300 focus:ring-2 focus:ring-calm-100"
+                        autocomplete="off"
+                      />
+                      <div
+                        id="suggestions"
+                        class="absolute left-0 right-0 top-[calc(100%+6px)] hidden max-h-64 overflow-auto rounded-xl border border-slate-200 bg-white shadow-soft"
+                        role="listbox"
+                        aria-label="Location suggestions"
+                      ></div>
+                    </div>
+                    <button
+                      id="btnSearchLocation"
+                      type="button"
+                      class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300 active:translate-y-px"
+                    >
+                      Search
+                    </button>
+                  </div>
+                  <p class="mt-2 text-xs text-slate-500">
+                    Tip: India-only suggestions. Select a suggestion, or search directly.
+                  </p>
+                </div>
+
+                <div class="grid gap-3 sm:grid-cols-3">
+                  <div class="sm:col-span-1">
+                    <label for="radius" class="text-sm font-medium text-slate-800">Radius</label>
+                    <select
+                      id="radius"
+                      class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm shadow-sm outline-none transition focus:border-calm-300 focus:ring-2 focus:ring-calm-100"
+                    >
+                      <option value="2000">2 km</option>
+                      <option value="5000" selected>5 km</option>
+                      <option value="10000">10 km</option>
+                      <option value="15000">15 km</option>
+                    </select>
+                  </div>
+
+                  <div class="sm:col-span-1">
+                    <label for="minBeds" class="text-sm font-medium text-slate-800">Min. available beds</label>
+                    <select
+                      id="minBeds"
+                      class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm shadow-sm outline-none transition focus:border-calm-300 focus:ring-2 focus:ring-calm-100"
+                    >
+                      <option value="0" selected>Any</option>
+                      <option value="1">1+</option>
+                      <option value="5">5+</option>
+                      <option value="10">10+</option>
+                      <option value="20">20+</option>
+                    </select>
+                  </div>
+
+                  <div class="sm:col-span-1">
+                    <label for="sortBy" class="text-sm font-medium text-slate-800">Sort by</label>
+                    <select
+                      id="sortBy"
+                      class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm shadow-sm outline-none transition focus:border-calm-300 focus:ring-2 focus:ring-calm-100"
+                    >
+                      <option value="distance" selected>Distance</option>
+                      <option value="beds">Available beds</option>
+                      <option value="name">Name</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="rounded-xl border border-calm-100 bg-calm-50/80 p-4">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="text-sm font-semibold text-calm-900">Current search point</div>
+                    <span id="coordPill" class="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700"
+                      >Not set</span
+                    >
+                  </div>
+                  <div class="mt-1 text-xs text-slate-600" id="coordHint">
+                    Use your location or search a location to begin.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <section id="how" class="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+              <h2 class="text-lg font-semibold">How this finder works</h2>
+              <div class="mt-3 grid gap-3 text-sm text-slate-600">
+                <div class="flex gap-3">
+                  <div class="mt-1 h-2 w-2 shrink-0 rounded-full bg-calm-500"></div>
+                  <p>Hospitals are fetched from OpenStreetMap data near your selected point.</p>
+                </div>
+                <div class="flex gap-3">
+                  <div class="mt-1 h-2 w-2 shrink-0 rounded-full bg-calm-500"></div>
+                  <p>
+                    Bed availability is shown as a <span class="font-medium text-slate-800">demo estimate</span> unless
+                    your staff portal is connected.
+                  </p>
+                </div>
+                <div class="flex gap-3">
+                  <div class="mt-1 h-2 w-2 shrink-0 rounded-full bg-calm-500"></div>
+                  <p>Bed type breakdowns and indicative pricing are generated per hospital for demo purposes.</p>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div class="lg:col-span-7">
+            <div class="rounded-2xl border border-slate-200 bg-white/90 p-3 shadow-soft sm:p-4">
+              <div class="flex flex-wrap items-center justify-between gap-3 px-2 pb-3 pt-1">
+                <div>
+                  <div class="text-sm font-semibold text-slate-900">Map view</div>
+                  <div class="text-xs text-slate-500">Hospitals around your chosen location.</div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <span id="statusBadge" class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700"
+                    >Ready</span
+                  >
+                  <button
+                    id="btnRecenter"
+                    type="button"
+                    class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled
+                  >
+                    Recenter
+                  </button>
+                </div>
+              </div>
+              <div id="map" class="overflow-hidden rounded-xl ring-1 ring-calm-50"></div>
+              <div class="px-2 pt-3 text-xs text-slate-500">
+                Note: If the list is empty, try increasing the radius or searching a nearby city/area.
+              </div>
+            </div>
+
+            <section id="results" class="mt-6">
+              <div class="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm sm:p-5">
+                <div class="flex flex-wrap items-end justify-between gap-3">
+                  <div>
+                    <h2 class="text-lg font-semibold">Nearby hospitals</h2>
+                    <p class="mt-1 text-sm text-slate-600" id="resultsMeta">No search yet.</p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <input
+                      id="hospitalSearch"
+                      type="text"
+                      placeholder="Filter by name…"
+                      class="w-56 max-w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm shadow-sm outline-none transition focus:border-calm-300 focus:ring-2 focus:ring-calm-100"
+                    />
+                  </div>
+                </div>
+
+                <!-- Loading skeletons for stable layout -->
+                <div id="resultsSkeleton" class="mt-4 grid gap-3">
+                  <div class="animate-pulse rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+                    <div class="flex justify-between gap-4">
+                      <div class="flex-1 space-y-2">
+                        <div class="h-3 w-32 rounded bg-slate-200"></div>
+                        <div class="h-3 w-48 rounded bg-slate-200"></div>
+                        <div class="h-3 w-40 rounded bg-slate-100"></div>
+                      </div>
+                      <div class="hidden w-24 space-y-2 sm:block">
+                        <div class="h-3 w-full rounded bg-slate-200"></div>
+                        <div class="h-3 w-10 rounded bg-slate-100"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="animate-pulse rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+                    <div class="flex justify-between gap-4">
+                      <div class="flex-1 space-y-2">
+                        <div class="h-3 w-40 rounded bg-slate-200"></div>
+                        <div class="h-3 w-56 rounded bg-slate-200"></div>
+                        <div class="h-3 w-32 rounded bg-slate-100"></div>
+                      </div>
+                      <div class="hidden w-24 space-y-2 sm:block">
+                        <div class="h-3 w-full rounded bg-slate-200"></div>
+                        <div class="h-3 w-10 rounded bg-slate-100"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mt-4 min-h-[80px] grid gap-3" id="cards"></div>
+
+                <div
+                  id="emptyState"
+                  class="mt-4 hidden rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-600 shadow-sm"
+                >
+                  <div class="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-calm-50 text-calm-800">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path
+                        d="M12 22c4.97 0 9-4.03 9-9s-4.03-9-9-9-9 4.03-9 9 4.03 9 9 9Z"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                      />
+                      <path d="M9.5 9.5 14.5 14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                      <path d="M14.5 9.5 9.5 14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  No hospitals found for the selected filters. Try a larger radius or a different location.
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Slide-in navigation drawer (shared) -->
+    <div
+      id="navOverlay"
+      class="fixed inset-0 z-40 bg-slate-900/40 opacity-0 transition-opacity duration-300 pointer-events-none"
+    ></div>
+    <aside
+      id="navDrawer"
+      class="fixed inset-y-0 left-0 z-50 w-64 max-w-[80%] -translate-x-full transform bg-white shadow-xl ring-1 ring-slate-200 transition-transform duration-300"
+      aria-label="Main navigation"
+    >
+      <div class="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
+        <div class="flex items-center gap-2">
+          <div class="grid h-8 w-8 place-items-center rounded-lg bg-calm-50 text-calm-700">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M12 2C9.24 2 7 4.24 7 7v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7c0-2.76-2.24-5-5-5Z"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+              <path d="M9 14h6M12 11v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-slate-900">CareFinder</p>
+            <p class="text-[11px] text-slate-500">India-first HMS demo</p>
+          </div>
+        </div>
+        <button
+          id="btnNavClose"
+          type="button"
+          class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50"
+        >
+          <span class="sr-only">Close navigation</span>
+          ✕
+        </button>
+      </div>
+      <nav class="px-3 py-3 text-sm text-slate-800">
+        <a
+          href="./index.html#hero"
+          class="block rounded-lg px-3 py-2 hover:bg-calm-50 hover:text-calm-900"
+        >
+          Home
+        </a>
+        <a
+          href="./index.html#features"
+          class="mt-1 block rounded-lg px-3 py-2 hover:bg-calm-50 hover:text-calm-900"
+        >
+          Features
+        </a>
+        <a
+          href="./hospitals.html"
+          class="mt-1 block rounded-lg px-3 py-2 hover:bg-calm-50 hover:text-calm-900"
+        >
+          Hospital finder
+        </a>
+        <a
+          href="./index.html#about"
+          class="mt-1 block rounded-lg px-3 py-2 hover:bg-calm-50 hover:text-calm-900"
+        >
+          About
+        </a>
+        <a
+          href="./privacy.html"
+          class="mt-1 block rounded-lg px-3 py-2 hover:bg-calm-50 hover:text-calm-900"
+        >
+          Privacy policy
+        </a>
+        <a
+          href="./terms.html"
+          class="mt-1 block rounded-lg px-3 py-2 hover:bg-calm-50 hover:text-calm-900"
+        >
+          Terms &amp; conditions
+        </a>
+      </nav>
+    </aside>
+
+    <footer class="border-t border-calm-100 bg-white">
+      <div class="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+        <div>© <span id="yearSpanHospitals"></span> CareFinder. Hospital finder.</div>
+        <div class="flex flex-wrap gap-3">
+          <a href="./index.html#about" class="hover:text-slate-700">About us</a>
+          <a href="./privacy.html" class="hover:text-slate-700">Privacy policy</a>
+          <a href="./terms.html" class="hover:text-slate-700">Terms &amp; conditions</a>
+        </div>
+      </div>
+    </footer>
+
+    <script defer src="./app.js"></script>
+    <script defer src="./navigation.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        var span = document.getElementById("yearSpanHospitals");
+        if (span) span.textContent = new Date().getFullYear().toString();
+      });
+    </script>
+  </body>
+</html>
+

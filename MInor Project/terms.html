@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CareFinder • Terms &amp; Conditions</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              calm: {
+                50: "#f2fbfb",
+                100: "#dcf4f4",
+                200: "#b9e7e9",
+                300: "#86d2d7",
+                400: "#4db8c0",
+                500: "#2f9aa3",
+                600: "#247b83",
+                700: "#21636a",
+                800: "#205158",
+                900: "#1f444b"
+              }
+            }
+          }
+        }
+      };
+    </script>
+  </head>
+
+  <body class="min-h-screen bg-gradient-to-b from-calm-50 via-white to-slate-50 text-slate-900">
+    <header class="sticky top-0 z-40 border-b border-calm-100 bg-white/90 backdrop-blur">
+      <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+        <div class="flex items-center gap-3">
+          <button
+            id="btnNavMenu"
+            type="button"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-calm-50 focus:outline-none focus:ring-2 focus:ring-calm-200"
+          >
+            <span class="sr-only">Open navigation</span>
+            <div class="flex flex-col gap-[3px] transition-transform duration-200" aria-hidden="true">
+              <span class="block h-0.5 w-4 rounded bg-slate-800"></span>
+              <span class="block h-0.5 w-4 rounded bg-slate-800"></span>
+              <span class="block h-0.5 w-4 rounded bg-slate-800"></span>
+            </div>
+          </button>
+          <div class="grid h-10 w-10 place-items-center rounded-xl bg-calm-100 text-calm-800 shadow-sm">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M12 2C9.24 2 7 4.24 7 7v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7c0-2.76-2.24-5-5-5Z"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+              <path d="M9 14h6M12 11v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <div class="text-base font-semibold leading-tight tracking-tight">CareFinder</div>
+              <span class="hidden rounded-full bg-calm-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-calm-700 sm:inline">
+                India only
+              </span>
+            </div>
+            <div class="text-xs text-slate-600">Terms &amp; conditions</div>
+          </div>
+        </div>
+
+        <nav class="hidden items-center gap-2 sm:flex">
+          <a href="./index.html#hero" class="rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-calm-50 hover:text-slate-900"
+            >Home</a
+          >
+          <a
+            href="./hospitals.html"
+            class="rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-calm-50 hover:text-slate-900"
+            >Hospital finder</a
+          >
+          <a
+            href="./index.html#about"
+            class="rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-calm-50 hover:text-slate-900"
+            >About</a
+          >
+          <a
+            href="./privacy.html"
+            class="rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-calm-50 hover:text-slate-900"
+            >Privacy</a
+          >
+        </nav>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-3xl px-4 pb-10 pt-8">
+      <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Terms &amp; Conditions</h1>
+      <p class="mt-2 text-sm text-slate-600">
+        These demo terms describe how the CareFinder sample application should be used. When you adapt this project for
+        a real hospital or institution, replace this page with an agreement reviewed by your legal team.
+      </p>
+
+      <section class="mt-6 space-y-3 text-sm text-slate-700">
+        <div>
+          <h2 class="text-sm font-semibold text-slate-900">1. Non-production use</h2>
+          <p class="mt-1">
+            The CareFinder codebase is provided for educational and prototyping purposes. It is
+            <span class="font-semibold">not</span> intended to be used as-is for managing real patient care, emergency
+            triage, or hospital operations.
+          </p>
+        </div>
+
+        <div>
+          <h2 class="text-sm font-semibold text-slate-900">2. No medical advice</h2>
+          <p class="mt-1">
+            The application does not provide medical advice, diagnosis, or treatment. All clinical decisions must be
+            taken by qualified healthcare professionals in accordance with local protocols.
+          </p>
+        </div>
+
+        <div>
+          <h2 class="text-sm font-semibold text-slate-900">3. Data accuracy</h2>
+          <p class="mt-1">
+            Hospital lists, bed counts, ambulance ETAs, and tariffs are demo values only. When you connect this project
+            to your own data sources, you are solely responsible for:
+          </p>
+          <ul class="mt-1 list-disc space-y-1 pl-5">
+            <li>Ensuring that the information displayed is accurate and regularly updated.</li>
+            <li>Communicating clearly to users which values are live and which are approximate.</li>
+            <li>Auditing changes made by staff through the admin portal.</li>
+          </ul>
+        </div>
+
+        <div>
+          <h2 class="text-sm font-semibold text-slate-900">4. Emergency usage</h2>
+          <p class="mt-1">
+            In real emergencies, patients and families should always be advised to call the official local emergency
+            number first. CareFinder, even when integrated with live ambulance systems, must be positioned as a
+            supporting tool.
+          </p>
+        </div>
+
+        <div>
+          <h2 class="text-sm font-semibold text-slate-900">5. Security &amp; compliance</h2>
+          <p class="mt-1">
+            The sample backend includes only basic authentication and file-based storage. Before using it in production
+            you must:
+          </p>
+          <ul class="mt-1 list-disc space-y-1 pl-5">
+            <li>Implement secure hosting, encryption, logging, and monitoring.</li>
+            <li>Follow your organisation&apos;s information security policies.</li>
+            <li>Comply with all applicable laws and health regulations.</li>
+          </ul>
+        </div>
+
+        <div>
+          <h2 class="text-sm font-semibold text-slate-900">6. Modifications</h2>
+          <p class="mt-1">
+            You are free to modify the source code to suit your project. However, any institution deploying a modified
+            version should maintain its own change log, release notes, and support contacts for end users.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <!-- Slide-in navigation drawer (shared) -->
+    <div
+      id="navOverlay"
+      class="fixed inset-0 z-40 bg-slate-900/40 opacity-0 transition-opacity duration-300 pointer-events-none"
+    ></div>
+    <aside
+      id="navDrawer"
+      class="fixed inset-y-0 left-0 z-50 w-64 max-w-[80%] -translate-x-full transform bg-white shadow-xl ring-1 ring-slate-200 transition-transform duration-300"
+      aria-label="Main navigation"
+    >
+      <div class="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
+        <div class="flex items-center gap-2">
+          <div class="grid h-8 w-8 place-items-center rounded-lg bg-calm-50 text-calm-700">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M12 2C9.24 2 7 4.24 7 7v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7c0-2.76-2.24-5-5-5Z"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+              <path d="M9 14h6M12 11v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-slate-900">CareFinder</p>
+            <p class="text-[11px] text-slate-500">India-first HMS demo</p>
+          </div>
+        </div>
+        <button
+          id="btnNavClose"
+          type="button"
+          class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50"
+        >
+          <span class="sr-only">Close navigation</span>
+          ✕
+        </button>
+      </div>
+      <nav class="px-3 py-3 text-sm text-slate-800">
+        <a
+          href="./index.html#hero"
+          class="block rounded-lg px-3 py-2 hover:bg-calm-50 hover:text-calm-900"
+        >
+          Home
+        </a>
+        <a
+          href="./index.html#features"
+          class="mt-1 block rounded-lg px-3 py-2 hover:bg-calm-50 hover:text-calm-900"
+        >
+          Features
+        </a>
+        <a
+          href="./hospitals.html"
+          class="mt-1 block rounded-lg px-3 py-2 hover:bg-calm-50 hover:text-calm-900"
+        >
+          Hospital finder
+        </a>
+        <a
+          href="./index.html#about"
+          class="mt-1 block rounded-lg px-3 py-2 hover:bg-calm-50 hover:text-calm-900"
+        >
+          About
+        </a>
+        <a
+          href="./privacy.html"
+          class="mt-1 block rounded-lg px-3 py-2 hover:bg-calm-50 hover:text-calm-900"
+        >
+          Privacy policy
+        </a>
+        <a
+          href="./terms.html"
+          class="mt-1 block rounded-lg px-3 py-2 hover:bg-calm-50 hover:text-calm-900"
+        >
+          Terms &amp; conditions
+        </a>
+      </nav>
+    </aside>
+
+    <footer class="border-t border-calm-100 bg-white">
+      <div class="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+        <div>© <span id="yearSpanTerms"></span> CareFinder. Demo terms &amp; conditions.</div>
+        <div class="flex flex-wrap gap-3">
+          <a href="./index.html#about" class="hover:text-slate-700">About us</a>
+          <a href="./privacy.html" class="hover:text-slate-700">Privacy policy</a>
+        </div>
+      </div>
+    </footer>
+
+    <script defer src="./navigation.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        var span = document.getElementById("yearSpanTerms");
+        if (span) span.textContent = new Date().getFullYear().toString();
+      });
+    </script>
+  </body>
+</html>
+
