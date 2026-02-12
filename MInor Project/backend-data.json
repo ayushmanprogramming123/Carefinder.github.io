@@ -7,6 +7,14 @@
       "role": "hospital_staff",
       "hospitalKey": "kiims",
       "passwordHash": "$2a$10$U/VGHxk5FiDev93OVffA0ebICaovqIpagULPMVdjvQ0WSrlH.0/I."
+    },
+    {
+      "id": "user_mljr1uyc",
+      "name": "Ayushman Baksi",
+      "email": "Ayushman@gmail.com",
+      "role": "hospital_staff",
+      "hospitalKey": "ayushman-hospital",
+      "passwordHash": "$2a$10$rRTkI4IWPuH6HvD1VR0PPeZFJqxFl9Axue6zCSbDE0sVZn18hcTbO"
     }
   ],
   "hospitals": [
@@ -24,6 +32,24 @@
         "capacity": 121,
         "icu": 8,
         "emergency": true
+      }
+    },
+    {
+      "key": "ayushman-hospital",
+      "name": "Ayushman Hospital",
+      "aliases": [],
+      "normalizedName": "ayushman",
+      "beds": {
+        "available": 0,
+        "capacity": 8,
+        "icu": 0,
+        "emergency": true
+      },
+      "contact": {
+        "address": "City centre",
+        "city": "Durgapur",
+        "state": "West Bengal",
+        "phone": "9474327350"
       }
     }
   ]

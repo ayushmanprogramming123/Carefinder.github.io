@@ -2,7 +2,6 @@ const API_BASE = "http://localhost:4000/api";
 
 const els = {
   requestForm: document.getElementById("requestForm"),
-  pickupAddress: document.getElementById("pickupAddress"),
   pickupSummary: document.getElementById("pickupSummary"),
   btnPickupCurrent: document.getElementById("btnPickupCurrent"),
   requestMessage: document.getElementById("requestMessage"),
@@ -11,11 +10,15 @@ const els = {
   metaAssignment: document.getElementById("metaAssignment"),
   metaEta: document.getElementById("metaEta"),
   metaPosition: document.getElementById("metaPosition"),
+  metaDriver: document.getElementById("metaDriver"),
+  metaSpeed: document.getElementById("metaSpeed"),
   dropHospitalName: document.getElementById("dropHospitalName"),
   confirmModal: document.getElementById("confirmModal"),
   confirmBody: document.getElementById("confirmBody"),
   btnConfirmClose: document.getElementById("btnConfirmClose"),
-  btnConfirmOk: document.getElementById("btnConfirmOk")
+  btnConfirmOk: document.getElementById("btnConfirmOk"),
+  nearestHospitalsStatus: document.getElementById("nearestHospitalsStatus"),
+  nearestHospitalsList: document.getElementById("nearestHospitalsList")
 };
 
 let map = null;
@@ -29,6 +32,112 @@ const state = {
   pickupLocation: null, // { lat, lon }
   dropLocation: null // reserved if you later wire map selection for drop
 };
+
+// ---------- Nearest hospitals (live via Overpass) ----------
+
+async function fetchNearbyHospitalsAroundPickup({ lat, lon, radiusMeters }) {
+  const query = `
+    [out:json][timeout:20];
+    (
+      node["amenity"="hospital"](around:${radiusMeters},${lat},${lon});
+      way["amenity"="hospital"](around:${radiusMeters},${lat},${lon});
+      relation["amenity"="hospital"](around:${radiusMeters},${lat},${lon});
+    );
+    out center tags;
+  `;
+
+  const res = await fetch("https://overpass-api.de/api/interpreter", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+    body: new URLSearchParams({ data: query }).toString()
+  });
+  if (!res.ok) {
+    throw new Error(`Overpass error: ${res.status}`);
+  }
+  const json = await res.json();
+  const elements = Array.isArray(json.elements) ? json.elements : [];
+
+  const hospitals = elements
+    .map((el) => {
+      const name = el.tags?.name || "Unnamed hospital";
+      const isNode = el.type === "node";
+      const hLat = isNode ? el.lat : el.center?.lat;
+      const hLon = isNode ? el.lon : el.center?.lon;
+      if (!Number.isFinite(hLat) || !Number.isFinite(hLon)) return null;
+      const distKm = haversineKm({ lat, lon }, { lat: hLat, lon: hLon });
+      return {
+        id: `${el.type}/${el.id}`,
+        name,
+        lat: hLat,
+        lon: hLon,
+        distanceKm: distKm
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.distanceKm - b.distanceKm);
+
+  return hospitals.slice(0, 5);
+}
+
+function haversineKm(a, b) {
+  const R = 6371;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLon = ((b.lon - a.lon) * Math.PI) / 180;
+  const lat1 = (a.lat * Math.PI) / 180;
+  const lat2 = (b.lat * Math.PI) / 180;
+  const x =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(x)));
+}
+
+async function loadNearestHospitalsForPickup() {
+  if (!state.pickupLocation || !els.nearestHospitalsStatus || !els.nearestHospitalsList) return;
+  const { lat, lon } = state.pickupLocation;
+
+  els.nearestHospitalsStatus.textContent = "Fetching nearby hospitals…";
+  els.nearestHospitalsList.innerHTML = "";
+
+  try {
+    const hospitals = await fetchNearbyHospitalsAroundPickup({ lat, lon, radiusMeters: 6000 });
+    if (!hospitals.length) {
+      els.nearestHospitalsStatus.textContent =
+        "No hospitals found within ~6 km of this pickup point.";
+      return;
+    }
+    els.nearestHospitalsStatus.textContent =
+      "Tap a hospital below to fill it as the dropping hospital.";
+    els.nearestHospitalsList.innerHTML = hospitals
+      .map(
+        (h) => `<li>
+          <button
+            type="button"
+            class="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 hover:bg-rose-50"
+            data-nearest-hospital="${h.name.replace(/"/g, "&quot;")}"
+          >
+            <span class="text-left">
+              <span class="block text-[13px] font-semibold text-slate-900">${h.name}</span>
+              <span class="block text-[11px] text-slate-500">${h.distanceKm.toFixed(2)} km away</span>
+            </span>
+          </button>
+        </li>`
+      )
+      .join("");
+
+    els.nearestHospitalsList.querySelectorAll("[data-nearest-hospital]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const name = btn.getAttribute("data-nearest-hospital");
+        if (els.dropHospitalName && name) {
+          els.dropHospitalName.value = name;
+        }
+      });
+    });
+  } catch (e) {
+    console.error(e);
+    els.nearestHospitalsStatus.textContent =
+      "Could not load nearby hospitals right now. Please try again in a moment.";
+  }
+}
 
 function setRequestMessage(msg, kind = "info") {
   const base = "mt-1 text-xs";
@@ -108,6 +217,9 @@ function setPickupLocation(loc, sourceLabel) {
   if (els.pickupSummary) {
     els.pickupSummary.textContent = `${sourceLabel}: ${loc.lat.toFixed(5)}, ${loc.lon.toFixed(5)}`;
   }
+  loadNearestHospitalsForPickup().catch((e) => {
+    console.error("Nearest hospitals failed:", e);
+  });
 }
 
 async function geoUseCurrentLocation() {
@@ -128,10 +240,10 @@ async function geoUseCurrentLocation() {
     const lat = pos.coords.latitude;
     const lon = pos.coords.longitude;
     setPickupLocation({ lat, lon }, "Current location");
-    setRequestMessage("Current location set as pickup. Please verify the address text.", "success");
+    setRequestMessage("Current location set as pickup. You can adjust by tapping on the map.", "success");
   } catch (e) {
     console.error(e);
-    setRequestMessage("Unable to use current location. Please type the address manually.", "error");
+    setRequestMessage("Unable to use current location. Please tap on the map to set a pickup point.", "error");
   } finally {
     els.btnPickupCurrent.disabled = false;
     els.btnPickupCurrent.textContent = "Use my current location";
@@ -228,6 +340,18 @@ function updateMarkers(trip) {
   els.metaPosition.textContent = `${trip.ambulanceLocation.lat.toFixed(4)}, ${trip.ambulanceLocation.lon.toFixed(
     4
   )}`;
+  if (els.metaDriver) {
+    const name = trip.driverName || "Not assigned";
+    const phone = trip.driverPhone || "";
+    els.metaDriver.textContent = phone ? `${name} • ${phone}` : name;
+  }
+  if (els.metaSpeed) {
+    if (typeof trip.speedKmph === "number" && Number.isFinite(trip.speedKmph)) {
+      els.metaSpeed.textContent = `${trip.speedKmph.toFixed(0)} km/h`;
+    } else {
+      els.metaSpeed.textContent = "—";
+    }
+  }
 }
 
 function validateName(name) {
@@ -274,15 +398,14 @@ async function startTracking(tripId) {
 
 async function handleRequest(e) {
   e.preventDefault();
-  const address = els.pickupAddress.value.trim();
   const typeInput = document.querySelector('input[name="ambType"]:checked');
   const ambulanceType = typeInput ? typeInput.value : "bls";
   const patientName = document.getElementById("patientName").value.trim();
   const contactNumber = document.getElementById("contactNumber").value.trim();
   const dropHospitalName = els.dropHospitalName.value.trim();
 
-  if (!address && !state.pickupLocation) {
-    setRequestMessage("Please provide a pickup address or set a pickup pin on the map.", "error");
+  if (!state.pickupLocation) {
+    setRequestMessage("Please set a pickup pin using your current location or by tapping on the map.", "error");
     return;
   }
 
@@ -330,7 +453,7 @@ async function handleRequest(e) {
     const body = await api("/ambulances/request", {
       method: "POST",
       body: JSON.stringify({
-        pickupAddress: address,
+        pickupAddress: null,
         ambulanceType,
         patientName,
         contactNumber,
@@ -371,6 +494,13 @@ async function handleRequest(e) {
       if (contactNumber) {
         items.push(
           `<div><span class="font-medium text-slate-800">Contact:</span> ${contactNumber}</div>`
+        );
+      }
+      if (t.driverName || t.driverPhone) {
+        items.push(
+          `<div><span class="font-medium text-slate-800">Driver:</span> ${
+            t.driverName || "Assigned driver"
+          }${t.driverPhone ? ` • ${t.driverPhone}` : ""}</div>`
         );
       }
       els.confirmBody.innerHTML = items

@@ -144,7 +144,17 @@ function findHospitalByName(name) {
 // ---------- Auth routes ----------
 
 app.post("/api/auth/register", (req, res) => {
-  const { name, email, password, hospitalName } = req.body || {};
+  const {
+    name,
+    email,
+    password,
+    hospitalName,
+    hospitalAddress,
+    hospitalCity,
+    hospitalState,
+    hospitalPhone,
+    hospitalCapacity
+  } = req.body || {};
   if (!name || !email || !password || !hospitalName) {
     return res.status(400).json({ error: "name, email, password, hospitalName are required" });
   }
@@ -167,9 +177,17 @@ app.post("/api/auth/register", (req, res) => {
       normalizedName: normalizeName(hospitalName),
       beds: {
         available: 0,
-        capacity: 0,
+        capacity: typeof hospitalCapacity === "number" && Number.isFinite(hospitalCapacity)
+          ? Math.max(0, Math.floor(hospitalCapacity))
+          : 0,
         icu: 0,
         emergency: false
+      },
+      contact: {
+        address: hospitalAddress || "",
+        city: hospitalCity || "",
+        state: hospitalState || "",
+        phone: hospitalPhone || ""
       }
     };
     db.hospitals.push(hospital);
@@ -339,6 +357,31 @@ function jitterCoordinate(lat, lon, maxMeters) {
   return { lat: lat + dLat, lon: lon + dLon };
 }
 
+const DRIVER_NAMES = [
+  "Rahul Singh",
+  "Anil Kumar",
+  "Sanjay Mishra",
+  "Pavan Reddy",
+  "Imran Khan",
+  "Vikram Patil",
+  "Joseph D'Souza",
+  "Pradeep Yadav"
+];
+
+function randomDriverName() {
+  return DRIVER_NAMES[Math.floor(Math.random() * DRIVER_NAMES.length)];
+}
+
+function randomDriverPhone() {
+  // Simple Indian-style demo number (not real)
+  const start = ["6", "7", "8", "9"][Math.floor(Math.random() * 4)];
+  let rest = "";
+  for (let i = 0; i < 9; i++) {
+    rest += Math.floor(Math.random() * 10);
+  }
+  return start + rest;
+}
+
 app.post("/api/ambulances/request", (req, res) => {
   const {
     pickupAddress,
@@ -400,7 +443,9 @@ app.post("/api/ambulances/request", (req, res) => {
     createdAt: Date.now(),
     etaMinutes,
     status: "en_route",
-    ambulanceLocation
+    ambulanceLocation,
+    driverName: randomDriverName(),
+    driverPhone: randomDriverPhone()
   };
 
   trips.set(id, trip);
@@ -429,6 +474,14 @@ app.get("/api/ambulances/track/:id", (req, res) => {
   const remainingMinutes = Math.max(0, trip.etaMinutes * (1 - progress));
 
   const status = progress >= 1 ? "arrived" : "en_route";
+  let speedKmph;
+  if (status === "arrived") {
+    speedKmph = 0;
+  } else {
+    const base = 25 + (1 - progress) * 15; // faster when further away
+    const jitter = randomBetween(-5, 5);
+    speedKmph = Math.max(10, Math.round(base + jitter));
+  }
 
   const view = {
     id: trip.id,
@@ -441,7 +494,10 @@ app.get("/api/ambulances/track/:id", (req, res) => {
     createdAt: trip.createdAt,
     status,
     etaMinutes: remainingMinutes,
-    ambulanceLocation: { lat: currentLat, lon: currentLon }
+    ambulanceLocation: { lat: currentLat, lon: currentLon },
+    driverName: trip.driverName,
+    driverPhone: trip.driverPhone,
+    speedKmph
   };
 
   if (status === "arrived") {

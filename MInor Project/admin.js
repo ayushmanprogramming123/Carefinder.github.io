@@ -10,6 +10,12 @@ const els = {
   authPassword: document.getElementById("authPassword"),
   authHospitalName: document.getElementById("authHospitalName"),
   hospitalNameField: document.getElementById("hospitalNameField"),
+  hospitalDetailsFields: document.getElementById("hospitalDetailsFields"),
+  authHospitalAddress: document.getElementById("authHospitalAddress"),
+  authHospitalCity: document.getElementById("authHospitalCity"),
+  authHospitalState: document.getElementById("authHospitalState"),
+  authHospitalPhone: document.getElementById("authHospitalPhone"),
+  authHospitalCapacity: document.getElementById("authHospitalCapacity"),
   authMessage: document.getElementById("authMessage"),
   dashboard: document.getElementById("dashboard"),
   btnLogout: document.getElementById("btnLogout"),
@@ -59,6 +65,9 @@ function setMode(mode) {
   state.mode = mode;
   els.authModeLabel.textContent = mode === "login" ? "Login" : "Register";
   els.hospitalNameField.classList.toggle("hidden", mode === "login");
+  if (els.hospitalDetailsFields) {
+    els.hospitalDetailsFields.classList.toggle("hidden", mode === "login");
+  }
 
   els.btnModeLogin.className =
     "flex-1 rounded-lg px-3 py-2 text-xs font-medium " +
@@ -119,6 +128,11 @@ async function handleAuthSubmit(e) {
   const password = els.authPassword.value.trim();
   const name = els.authName.value.trim();
   const hospitalName = els.authHospitalName.value.trim();
+  const hospitalAddress = els.authHospitalAddress ? els.authHospitalAddress.value.trim() : "";
+  const hospitalCity = els.authHospitalCity ? els.authHospitalCity.value.trim() : "";
+  const hospitalState = els.authHospitalState ? els.authHospitalState.value.trim() : "";
+  const hospitalPhone = els.authHospitalPhone ? els.authHospitalPhone.value.trim() : "";
+  const hospitalCapacityRaw = els.authHospitalCapacity ? els.authHospitalCapacity.value.trim() : "";
 
   if (!email || !password) {
     setAuthMessage("Email and password are required.", "error");
@@ -147,9 +161,24 @@ async function handleAuthSubmit(e) {
         setAuthMessage("Name and hospital name are required for registration.", "error");
         return;
       }
+      if (!hospitalAddress || !hospitalCity || !hospitalState || !hospitalPhone) {
+        setAuthMessage("Please fill hospital address, city, state, and contact number.", "error");
+        return;
+      }
+      const hospitalCapacity = hospitalCapacityRaw ? Number(hospitalCapacityRaw) : null;
       await api("/auth/register", {
         method: "POST",
-        body: JSON.stringify({ name, email, password, hospitalName })
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          hospitalName,
+          hospitalAddress,
+          hospitalCity,
+          hospitalState,
+          hospitalPhone,
+          hospitalCapacity
+        })
       });
       setAuthMessage("Registered successfully. You can now log in.", "success");
       setMode("login");
@@ -249,6 +278,10 @@ function boot() {
   if (token) {
     storeToken(token);
     loadDashboard().catch((e) => console.error(e));
+  }
+
+  if (window.location.hash === "#register") {
+    setMode("register");
   }
 }
 
