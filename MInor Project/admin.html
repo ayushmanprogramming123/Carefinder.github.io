@@ -198,6 +198,16 @@
               </div>
 
               <div id="hospitalDetailsFields" class="hidden grid gap-3 border-t border-slate-100 pt-3 mt-1">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-xs font-medium text-slate-800">Hospital location</span>
+                  <button
+                    id="btnUseHospitalLocation"
+                    type="button"
+                    class="inline-flex items-center gap-1.5 rounded-xl border border-calm-200 bg-calm-50 px-3 py-1.5 text-[11px] font-semibold text-calm-800 shadow-sm transition hover:bg-calm-100"
+                  >
+                    Use my current location
+                  </button>
+                </div>
                 <div>
                   <label class="block text-xs font-medium text-slate-800" for="authHospitalAddress">Hospital address</label>
                   <input
@@ -209,6 +219,15 @@
                 </div>
                 <div class="grid gap-3 sm:grid-cols-2">
                   <div>
+                    <label class="block text-xs font-medium text-slate-800" for="authHospitalDistrict">District</label>
+                    <input
+                      id="authHospitalDistrict"
+                      type="text"
+                      placeholder="District"
+                      class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm outline-none transition focus:border-calm-300 focus:ring-2 focus:ring-calm-100"
+                    />
+                  </div>
+                  <div>
                     <label class="block text-xs font-medium text-slate-800" for="authHospitalCity">City</label>
                     <input
                       id="authHospitalCity"
@@ -217,12 +236,61 @@
                       class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm outline-none transition focus:border-calm-300 focus:ring-2 focus:ring-calm-100"
                     />
                   </div>
+                </div>
+                <div class="grid gap-3 sm:grid-cols-2">
                   <div>
-                    <label class="block text-xs font-medium text-slate-800" for="authHospitalState">State</label>
-                    <input
+                    <label class="block text-xs font-medium text-slate-800" for="authHospitalState">State / Union Territory</label>
+                    <select
                       id="authHospitalState"
+                      class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm outline-none transition focus:border-calm-300 focus:ring-2 focus:ring-calm-100"
+                    >
+                      <option value="">Select state</option>
+                      <option value="Andhra Pradesh">Andhra Pradesh</option>
+                      <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+                      <option value="Assam">Assam</option>
+                      <option value="Bihar">Bihar</option>
+                      <option value="Chhattisgarh">Chhattisgarh</option>
+                      <option value="Goa">Goa</option>
+                      <option value="Gujarat">Gujarat</option>
+                      <option value="Haryana">Haryana</option>
+                      <option value="Himachal Pradesh">Himachal Pradesh</option>
+                      <option value="Jharkhand">Jharkhand</option>
+                      <option value="Karnataka">Karnataka</option>
+                      <option value="Kerala">Kerala</option>
+                      <option value="Madhya Pradesh">Madhya Pradesh</option>
+                      <option value="Maharashtra">Maharashtra</option>
+                      <option value="Manipur">Manipur</option>
+                      <option value="Meghalaya">Meghalaya</option>
+                      <option value="Mizoram">Mizoram</option>
+                      <option value="Nagaland">Nagaland</option>
+                      <option value="Odisha">Odisha</option>
+                      <option value="Punjab">Punjab</option>
+                      <option value="Rajasthan">Rajasthan</option>
+                      <option value="Sikkim">Sikkim</option>
+                      <option value="Tamil Nadu">Tamil Nadu</option>
+                      <option value="Telangana">Telangana</option>
+                      <option value="Tripura">Tripura</option>
+                      <option value="Uttar Pradesh">Uttar Pradesh</option>
+                      <option value="Uttarakhand">Uttarakhand</option>
+                      <option value="West Bengal">West Bengal</option>
+                      <option value="Jammu and Kashmir">Jammu and Kashmir</option>
+                      <option value="Ladakh">Ladakh</option>
+                      <option value="Andaman and Nicobar Islands">Andaman and Nicobar Islands</option>
+                      <option value="Chandigarh">Chandigarh</option>
+                      <option value="Dadra and Nagar Haveli and Daman and Diu">Dadra and Nagar Haveli and Daman and Diu</option>
+                      <option value="Lakshadweep">Lakshadweep</option>
+                      <option value="Delhi">Delhi (NCT)</option>
+                      <option value="Puducherry">Puducherry</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-slate-800" for="authHospitalPincode">Pincode</label>
+                    <input
+                      id="authHospitalPincode"
                       type="text"
-                      placeholder="State / UT"
+                      placeholder="6-digit pincode"
+                      maxlength="6"
+                      pattern="[0-9]{6}"
                       class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm outline-none transition focus:border-calm-300 focus:ring-2 focus:ring-calm-100"
                     />
                   </div>

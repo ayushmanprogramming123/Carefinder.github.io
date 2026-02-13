@@ -18,7 +18,7 @@ CareFinder is an India-focused Hospital Management System (HMS) demo that connec
 
 | Feature | Description |
 |---------|-------------|
-| **Hospital Finder** | Search hospitals across India using location or city/area, with map view, filters (radius, min beds, sort), and live OpenStreetMap data |
+| **Hospital Finder** | Search hospitals across India using location or city/area, with map view, filters (radius, min beds, min rating, emergency only, has ICU, 24×7, sort), and live OpenStreetMap + registered hospitals data |
 | **Map Thumbnails** | Each hospital card displays a small map-based thumbnail showing the hospital's location (OSM tiles, lazy-loaded) |
 | **Bed Availability** | View available beds, capacity, ICU count, and emergency status; integrates with backend or uses demo estimates |
 | **Bed Categories & Pricing** | Detailed breakdown (General Ward, Semi-Private, ICU, NICU, etc.) with indicative pricing per category |
@@ -26,7 +26,7 @@ CareFinder is an India-focused Hospital Management System (HMS) demo that connec
 | **Hospital Detail Page** | Full profile with photos, facilities, bed table, contact info, and embedded map |
 | **Emergency Ambulance** | Request BLS/ALS/ICU/Neonatal ambulances with live vehicle tracking and 10-minute arrival target |
 | **Ambulance Status Popups** | Sequential notifications: "Dispatching an ambulance for you" → "Ambulance is on its way" → "Ambulance has arrived" |
-| **Staff Portal** | Hospital staff can register, log in, and update bed availability in real time |
+| **Staff Portal** | Hospital staff can register (with pincode, state/UT dropdown, district, “Use my location”), log in, and update bed availability in real time. Registered hospitals appear in the hospital finder when in range. |
 | **India-Only Geofencing** | Location search and "Use my location" restricted to India using Nominatim and bounding-box checks |
 
 ---
@@ -45,7 +45,14 @@ npm start
 # Frontend: Open index.html or serve the folder
 ```
 
-**Default KIMS admin credentials:** `kiims.admin@example.com` / `Kiims@123`
+### Default Login Credentials (KIIMS / KIMS)
+
+| Field | Value |
+|-------|-------|
+| **Email** | `kiims.admin@example.com` |
+| **Password** | `Kiims@123` |
+
+Use these credentials to log in to the **Staff portal** (`admin.html`) for the pre-seeded KIIMS (Kalinga Institute of Medical Sciences) hospital. After logging in, you can update bed availability in real time.
 
 ---
 

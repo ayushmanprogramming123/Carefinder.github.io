@@ -257,6 +257,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const meta = document.getElementById("hospitalMeta");
   if (meta) {
+    const rating = h.rating ?? 0;
+    const reviewCount = h.reviewCount ?? 0;
     meta.innerHTML = `
       <span class="inline-flex items-center gap-1 rounded-full bg-calm-50 px-2.5 py-1 font-medium text-calm-800">
         <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
@@ -265,6 +267,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <span class="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2.5 py-1 text-[11px] text-slate-700">
         Beds: ${h.beds?.available ?? 0} / ${h.beds?.capacity ?? 0}
       </span>
+      ${rating ? `<span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-800">★ ${rating.toFixed(1)} (${reviewCount} reviews)</span>` : ""}
     `;
   }
 
@@ -311,27 +314,38 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // demo photos: vary slightly by hospital id
-  const hash = Array.from(String(h.id || ""))
-    .map((ch) => ch.charCodeAt(0))
-    .reduce((a, b) => (a + b * 31) % 1000, 0);
+  // Live OSM map images for hospital location (India) - from OpenStreetMap tiles
+  function getOsmTileUrl(lat, lon, z) {
+    const n = Math.pow(2, z);
+    const x = Math.floor(((lon + 180) / 360) * n);
+    const latRad = (lat * Math.PI) / 180;
+    const y = Math.floor(
+      ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n
+    );
+    return `https://tile.openstreetmap.org/${z}/${x}/${y}.png`;
+  }
   const photoMain = document.getElementById("photoMain");
   const photoSecondary = document.getElementById("photoSecondary");
   const photoTertiary = document.getElementById("photoTertiary");
-  const urls = [
-    "https://images.unsplash.com/photo-1584466977773-e625c37cdd50?auto=format&fit=crop&w=1200&q=80",
-    "https://images.unsplash.com/photo-1535916707207-35f97e715e1b?auto=format&fit=crop&w=1200&q=80",
-    "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80",
-    "https://images.unsplash.com/photo-1584466977773-e625c37cdd50?auto=format&fit=crop&w=1200&q=80"
-  ];
-  if (photoMain) {
-    photoMain.style.backgroundImage = `url('${urls[hash % urls.length]}')`;
-  }
-  if (photoSecondary) {
-    photoSecondary.style.backgroundImage = `url('${urls[(hash + 1) % urls.length]}')`;
-  }
-  if (photoTertiary) {
-    photoTertiary.style.backgroundImage = `url('${urls[(hash + 2) % urls.length]}')`;
+  if (Number.isFinite(h.lat) && Number.isFinite(h.lon)) {
+    if (photoMain) {
+      photoMain.style.backgroundImage = `url('${getOsmTileUrl(h.lat, h.lon, 16)}')`;
+      photoMain.title = "Live map view of hospital location (OpenStreetMap)";
+    }
+    if (photoSecondary) {
+      photoSecondary.style.backgroundImage = `url('${getOsmTileUrl(h.lat, h.lon + 0.001, 16)}')`;
+    }
+    if (photoTertiary) {
+      photoTertiary.style.backgroundImage = `url('${getOsmTileUrl(h.lat + 0.001, h.lon, 16)}')`;
+    }
+  } else {
+    const fallbackUrls = [
+      "https://images.pexels.com/photos/4173239/pexels-photo-4173239.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      "https://images.pexels.com/photos/7659572/pexels-photo-7659572.jpeg?auto=compress&cs=tinysrgb&w=1200"
+    ];
+    if (photoMain) photoMain.style.backgroundImage = `url('${fallbackUrls[0]}')`;
+    if (photoSecondary) photoSecondary.style.backgroundImage = `url('${fallbackUrls[1]}')`;
+    if (photoTertiary) photoTertiary.style.backgroundImage = `url('${fallbackUrls[0]}')`;
   }
 
   buildFacilities(h);

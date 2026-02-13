@@ -9,6 +9,7 @@ const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const https = require("https");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -51,6 +52,28 @@ function slugify(name = "") {
     .replace(/(^-|-$)+/g, "") || "hospital";
 }
 
+function geocodeAddress(q) {
+  return new Promise((resolve) => {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&countrycodes=in`;
+    https
+      .get(url, { headers: { "User-Agent": "CareFinder/1.0" } }, (res) => {
+        let data = "";
+        res.on("data", (ch) => (data += ch));
+        res.on("end", () => {
+          try {
+            const arr = JSON.parse(data);
+            if (Array.isArray(arr) && arr[0] && arr[0].lat && arr[0].lon) {
+              resolve({ lat: parseFloat(arr[0].lat), lon: parseFloat(arr[0].lon) });
+            } else resolve(null);
+          } catch {
+            resolve(null);
+          }
+        });
+      })
+      .on("error", () => resolve(null));
+  });
+}
+
 function seedInitialData() {
   const passwordPlain = "Kiims@123";
   const passwordHash = bcrypt.hashSync(passwordPlain, 10);
@@ -75,6 +98,16 @@ function seedInitialData() {
         name: kiimsName,
         aliases: ["KIMS", "KIIMS", "Kalinga Institute of Medical Sciences"],
         normalizedName: normalizeName(kiimsName),
+        lat: 20.2961,
+        lon: 85.8245,
+        contact: {
+          address: "KIIT Road, Patia, Bhubaneswar",
+          city: "Bhubaneswar",
+          state: "Odisha",
+          district: "Khordha",
+          pincode: "751024",
+          phone: ""
+        },
         beds: {
           available: 25,
           capacity: 120,
@@ -143,7 +176,7 @@ function findHospitalByName(name) {
 
 // ---------- Auth routes ----------
 
-app.post("/api/auth/register", (req, res) => {
+app.post("/api/auth/register", async (req, res) => {
   const {
     name,
     email,
@@ -152,8 +185,11 @@ app.post("/api/auth/register", (req, res) => {
     hospitalAddress,
     hospitalCity,
     hospitalState,
+    hospitalDistrict,
+    hospitalPincode,
     hospitalPhone,
-    hospitalCapacity
+    hospitalCapacity,
+    hospitalLocation
   } = req.body || {};
   if (!name || !email || !password || !hospitalName) {
     return res.status(400).json({ error: "name, email, password, hospitalName are required" });
@@ -168,13 +204,32 @@ app.post("/api/auth/register", (req, res) => {
 
   let hospital = findHospitalByName(hospitalName);
   if (!hospital) {
-    // For now, allow dynamically creating new hospitals from registration.
     const key = slugify(hospitalName);
+    let lat = null;
+    if (
+      hospitalLocation &&
+      typeof hospitalLocation.lat === "number" &&
+      typeof hospitalLocation.lon === "number"
+    ) {
+      lat = { lat: hospitalLocation.lat, lon: hospitalLocation.lon };
+    } else if (hospitalAddress || hospitalPincode || hospitalCity || hospitalState) {
+      try {
+        const q = [hospitalAddress, hospitalCity, hospitalState, hospitalPincode, "India"]
+          .filter(Boolean)
+          .join(", ");
+        const geo = await geocodeAddress(q);
+        if (geo) lat = geo;
+      } catch (e) {
+        console.warn("Geocode failed for new hospital:", e.message);
+      }
+    }
     hospital = {
       key,
       name: hospitalName,
       aliases: [],
       normalizedName: normalizeName(hospitalName),
+      lat: lat ? lat.lat : null,
+      lon: lat ? lat.lon : null,
       beds: {
         available: 0,
         capacity: typeof hospitalCapacity === "number" && Number.isFinite(hospitalCapacity)
@@ -187,6 +242,8 @@ app.post("/api/auth/register", (req, res) => {
         address: hospitalAddress || "",
         city: hospitalCity || "",
         state: hospitalState || "",
+        district: hospitalDistrict || "",
+        pincode: hospitalPincode || "",
         phone: hospitalPhone || ""
       }
     };
@@ -317,6 +374,54 @@ app.patch("/api/hospitals/mine/beds", authMiddleware, (req, res) => {
   });
 });
 
+// ---------- Public: nearby registered hospitals (for hospital finder merge) ----------
+
+function haversineKm(a, b) {
+  const R = 6371;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLon = ((b.lon - a.lon) * Math.PI) / 180;
+  const lat1 = (a.lat * Math.PI) / 180;
+  const lat2 = (b.lat * Math.PI) / 180;
+  const x =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(x)));
+}
+
+app.get("/api/hospitals/nearby", (req, res) => {
+  const lat = parseFloat(req.query.lat);
+  const lon = parseFloat(req.query.lon);
+  const radiusM = parseInt(req.query.radius, 10) || 5000;
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    return res.status(400).json({ error: "lat and lon query params required" });
+  }
+  const withCoords = db.hospitals.filter(
+    (h) => Number.isFinite(h.lat) && Number.isFinite(h.lon)
+  );
+  const radiusKm = radiusM / 1000;
+  const nearby = withCoords
+    .map((h) => {
+      const distanceKm = haversineKm({ lat, lon }, { lat: h.lat, lon: h.lon });
+      if (distanceKm > radiusKm) return null;
+      return {
+        id: `reg/${h.key}`,
+        osmUrl: null,
+        name: h.name,
+        lat: h.lat,
+        lon: h.lon,
+        address: h.contact?.address || "",
+        phone: h.contact?.phone || null,
+        website: null,
+        distanceKm,
+        beds: h.beds || { available: 0, capacity: 0, icu: 0, emergency: false },
+        fromBackend: true
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.distanceKm - b.distanceKm);
+  return res.json({ hospitals: nearby });
+});
+
 // ---------- Public bed availability route (used by frontend) ----------
 
 app.post("/api/bed-availability", (req, res) => {
@@ -415,7 +520,7 @@ app.post("/api/ambulances/request", (req, res) => {
     effectivePickupLocation = { lat: baseLat, lon: baseLon };
   }
 
-  const ambulanceLocation = jitterCoordinate(effectivePickupLocation.lat, effectivePickupLocation.lon, 3000); // ~3 km away
+  const ambulanceLocation = jitterCoordinate(effectivePickupLocation.lat, effectivePickupLocation.lon, 2000); // ~2 km away
 
   const etaMinutes = randomBetween(4, 9); // always < 10 min in demo
 

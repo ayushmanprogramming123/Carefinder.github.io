@@ -9,7 +9,11 @@ const els = {
   suggestions: document.getElementById("suggestions"),
   radius: document.getElementById("radius"),
   minBeds: document.getElementById("minBeds"),
+  minRating: document.getElementById("minRating"),
   sortBy: document.getElementById("sortBy"),
+  filterEmergency: document.getElementById("filterEmergency"),
+  filterIcu: document.getElementById("filterIcu"),
+  filter24x7: document.getElementById("filter24x7"),
   coordPill: document.getElementById("coordPill"),
   coordHint: document.getElementById("coordHint"),
   statusBadge: document.getElementById("statusBadge"),
@@ -84,7 +88,7 @@ function setResultsLoading(isLoading) {
   if (els.hospitalSearch) {
     els.hospitalSearch.disabled = isLoading;
   }
-  [els.radius, els.minBeds, els.sortBy].forEach((el) => {
+  [els.radius, els.minBeds, els.minRating, els.sortBy].forEach((el) => {
     if (el) el.disabled = isLoading;
   });
 }
@@ -143,14 +147,21 @@ function mulberry32(seed) {
 }
 
 function demoBedAvailability(osmId) {
-  // Replace this function with real bed availability from your HMS backend.
   const numeric = Number(String(osmId || "").replace(/[^\d]/g, "")) || 123456;
   const rand = mulberry32(numeric);
-  const capacity = Math.max(10, Math.floor(rand() * 220) + 20); // 20..240
+  const capacity = Math.max(10, Math.floor(rand() * 220) + 20);
   const available = Math.max(0, Math.min(capacity, Math.floor(rand() * (capacity * 0.45))));
   const icu = Math.max(0, Math.min(25, Math.floor(rand() * 18)));
   const emergency = rand() > 0.2;
   return { capacity, available, icu, emergency };
+}
+
+function demoRatingAndReviews(osmId) {
+  const numeric = Number(String(osmId || "").replace(/[^\d]/g, "")) || 123456;
+  const rand = mulberry32(numeric);
+  const rating = Math.round((3.2 + rand() * 1.6) * 10) / 10;
+  const reviewCount = Math.floor(rand() * 180) + 12;
+  return { rating: Math.min(5, Math.max(1, rating)), reviewCount };
 }
 
 function badgeForBeds(available) {
@@ -211,7 +222,9 @@ async function loadBedAvailabilityForHospitals(hospitals) {
     return hospitals.map((h) => {
       const beds = demoBedAvailability(h.id);
       const bedCategories = buildBedCategoriesForHospital(h, beds);
-      return { ...h, beds, bedCategories };
+      const { rating, reviewCount } = demoRatingAndReviews(h.id);
+      const rand = mulberry32(Number(String(h.id || "").replace(/[^\d]/g, "")) || 999);
+      return { ...h, beds, bedCategories, rating, reviewCount, open24x7: rand() > 0.15 };
     });
   }
 
@@ -244,6 +257,8 @@ async function loadBedAvailabilityForHospitals(hospitals) {
 
     return hospitals.map((h) => {
       const info = fromArray ? fromArray(h.id) : mapObj[h.id];
+      const { rating, reviewCount } = demoRatingAndReviews(h.id);
+      const rand = mulberry32(Number(String(h.id || "").replace(/[^\d]/g, "")) || 999);
       if (info && typeof info.available === "number" && typeof info.capacity === "number") {
         const beds = {
           capacity: info.capacity,
@@ -254,15 +269,20 @@ async function loadBedAvailabilityForHospitals(hospitals) {
         return {
           ...h,
           beds,
-          bedCategories: buildBedCategoriesForHospital(h, beds)
+          bedCategories: buildBedCategoriesForHospital(h, beds),
+          rating,
+          reviewCount,
+          open24x7: rand() > 0.15
         };
       }
-      // Fallback per-hospital if backend doesn't know this ID.
       const beds = demoBedAvailability(h.id);
       return {
         ...h,
         beds,
-        bedCategories: buildBedCategoriesForHospital(h, beds)
+        bedCategories: buildBedCategoriesForHospital(h, beds),
+        rating,
+        reviewCount,
+        open24x7: rand() > 0.15
       };
     });
   } catch (e) {
@@ -271,7 +291,9 @@ async function loadBedAvailabilityForHospitals(hospitals) {
     return hospitals.map((h) => {
       const beds = demoBedAvailability(h.id);
       const bedCategories = buildBedCategoriesForHospital(h, beds);
-      return { ...h, beds, bedCategories };
+      const { rating, reviewCount } = demoRatingAndReviews(h.id);
+      const rand = mulberry32(Number(String(h.id || "").replace(/[^\d]/g, "")) || 999);
+      return { ...h, beds, bedCategories, rating, reviewCount, open24x7: rand() > 0.15 };
     });
   }
 }
@@ -332,6 +354,20 @@ function renderMarkers(hospitals) {
 }
 
 // ---------- Data fetching ----------
+
+async function fetchRegisteredHospitalsNearby(center, radiusMeters) {
+  try {
+    const url = `${BACKEND.endpoint.replace("/bed-availability", "")}/hospitals/nearby?lat=${center.lat}&lon=${center.lon}&radius=${radiusMeters}`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const body = await res.json();
+    const list = body.hospitals || [];
+    return list.map((h) => ({ ...h, distanceKm: h.distanceKm ?? haversineKm(center, h) }));
+  } catch (e) {
+    console.warn("Could not fetch registered hospitals:", e);
+    return [];
+  }
+}
 
 async function fetchNearbyHospitals({ lat, lon, radiusMeters }) {
   // Overpass query: nodes/ways/relations with amenity=hospital within radius
@@ -482,8 +518,9 @@ function renderCards(hospitals) {
             <h3 class="truncate text-base font-semibold text-slate-900">${escapeHtml(h.name)}</h3>
             <span class="rounded-full px-2.5 py-1 text-xs font-semibold ${badge.cls}">${escapeHtml(badge.text)}</span>
           </div>
-          <div class="mt-1 text-sm text-slate-600">
+          <div class="mt-1 flex items-center gap-2 text-sm text-slate-600">
             <span class="font-medium text-slate-800">${h.distanceKm.toFixed(2)} km</span> away
+            ${(h.rating || h.reviewCount) ? `<span class="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-800">★ ${(h.rating || 0).toFixed(1)} (${h.reviewCount || 0} reviews)</span>` : ""}
           </div>
           <div class="mt-2 text-sm text-slate-700">${addr}</div>
           </div>
@@ -584,18 +621,28 @@ function renderCards(hospitals) {
 
 function applyFiltersAndRender() {
   const minBeds = Number(els.minBeds.value || 0);
-  const sortBy = els.sortBy.value;
-  const q = (els.hospitalSearch.value || "").trim().toLowerCase();
+  const minRating = Number(els.minRating?.value || 0);
+  const sortBy = els.sortBy?.value || "distance";
+  const q = (els.hospitalSearch?.value || "").trim().toLowerCase();
+  const emergencyOnly = els.filterEmergency?.checked || false;
+  const hasIcuOnly = els.filterIcu?.checked || false;
+  const open24x7Only = els.filter24x7?.checked || false;
 
   let items = state.hospitals.slice();
 
   if (q) items = items.filter((h) => h.name.toLowerCase().includes(q));
   items = items.filter((h) => h.beds.available >= minBeds);
+  if (minRating > 0) items = items.filter((h) => (h.rating || 0) >= minRating);
+  if (emergencyOnly) items = items.filter((h) => h.beds.emergency);
+  if (hasIcuOnly) items = items.filter((h) => (h.beds.icu || 0) > 0);
+  if (open24x7Only) items = items.filter((h) => h.open24x7);
 
   if (sortBy === "beds") {
     items.sort((a, b) => b.beds.available - a.beds.available || a.distanceKm - b.distanceKm);
   } else if (sortBy === "name") {
     items.sort((a, b) => a.name.localeCompare(b.name));
+  } else if (sortBy === "rating") {
+    items.sort((a, b) => (b.rating || 0) - (a.rating || 0) || a.distanceKm - b.distanceKm);
   } else {
     items.sort((a, b) => a.distanceKm - b.distanceKm);
   }
@@ -769,17 +816,36 @@ async function refreshHospitals() {
 
   try {
     const radiusMeters = Number(els.radius.value);
-    const raw = await fetchNearbyHospitals({
-      lat: state.center.lat,
-      lon: state.center.lon,
-      radiusMeters
-    });
+    const [rawOsm, rawRegistered] = await Promise.all([
+      fetchNearbyHospitals({
+        lat: state.center.lat,
+        lon: state.center.lon,
+        radiusMeters
+      }),
+      fetchRegisteredHospitalsNearby(state.center, radiusMeters)
+    ]);
 
-    let hospitals = raw.map((h) => ({
+    const seen = new Set();
+    let hospitals = [];
+    for (const h of rawRegistered) {
+      const k = `${h.name.toLowerCase()}|${h.lat?.toFixed(5)}|${h.lon?.toFixed(5)}`;
+      if (!seen.has(k)) {
+        seen.add(k);
+        hospitals.push(h);
+      }
+    }
+    for (const h of rawOsm) {
+      const k = `${h.name.toLowerCase()}|${h.lat?.toFixed(5)}|${h.lon?.toFixed(5)}`;
+      if (!seen.has(k)) {
+        seen.add(k);
+        hospitals.push({ ...h, distanceKm: haversineKm(state.center, h) });
+      }
+    }
+
+    hospitals = hospitals.map((h) => ({
       ...h,
-      distanceKm: haversineKm(state.center, h)
+      distanceKm: h.distanceKm ?? haversineKm(state.center, h)
     }));
-
     hospitals.sort((a, b) => a.distanceKm - b.distanceKm);
     hospitals = await loadBedAvailabilityForHospitals(hospitals);
 
@@ -828,7 +894,13 @@ function wireEvents() {
     }
   });
 
-  [els.radius, els.minBeds, els.sortBy].forEach((el) => el.addEventListener("change", () => refreshHospitals()));
+  if (els.radius) els.radius.addEventListener("change", () => refreshHospitals());
+  [els.minBeds, els.minRating, els.sortBy].forEach((el) => {
+    if (el) el.addEventListener("change", () => applyFiltersAndRender());
+  });
+  [els.filterEmergency, els.filterIcu, els.filter24x7].forEach((el) => {
+    if (el) el.addEventListener("change", () => applyFiltersAndRender());
+  });
   els.hospitalSearch.addEventListener(
     "input",
     debounce(() => {

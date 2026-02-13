@@ -3,7 +3,6 @@ const API_BASE = "http://localhost:4000/api";
 const els = {
   btnModeLogin: document.getElementById("btnModeLogin"),
   btnModeRegister: document.getElementById("btnModeRegister"),
-  authModeLabel: document.getElementById("authModeLabel"),
   authForm: document.getElementById("authForm"),
   authName: document.getElementById("authName"),
   authEmail: document.getElementById("authEmail"),
@@ -14,8 +13,12 @@ const els = {
   authHospitalAddress: document.getElementById("authHospitalAddress"),
   authHospitalCity: document.getElementById("authHospitalCity"),
   authHospitalState: document.getElementById("authHospitalState"),
+  authHospitalDistrict: document.getElementById("authHospitalDistrict"),
+  authHospitalPincode: document.getElementById("authHospitalPincode"),
   authHospitalPhone: document.getElementById("authHospitalPhone"),
   authHospitalCapacity: document.getElementById("authHospitalCapacity"),
+  btnUseHospitalLocation: document.getElementById("btnUseHospitalLocation"),
+  authModeLabel: document.getElementById("authModeLabel"),
   authMessage: document.getElementById("authMessage"),
   dashboard: document.getElementById("dashboard"),
   btnLogout: document.getElementById("btnLogout"),
@@ -31,10 +34,11 @@ const els = {
 };
 
 const state = {
-  mode: "login", // 'login' | 'register'
+  mode: "login",
   token: null,
   user: null,
-  hospital: null
+  hospital: null,
+  hospitalLocation: null
 };
 
 function setAuthMessage(msg, kind = "info") {
@@ -161,11 +165,14 @@ async function handleAuthSubmit(e) {
         setAuthMessage("Name and hospital name are required for registration.", "error");
         return;
       }
+      const hospitalDistrict = els.authHospitalDistrict ? els.authHospitalDistrict.value.trim() : "";
+      const hospitalPincode = els.authHospitalPincode ? els.authHospitalPincode.value.trim() : "";
       if (!hospitalAddress || !hospitalCity || !hospitalState || !hospitalPhone) {
         setAuthMessage("Please fill hospital address, city, state, and contact number.", "error");
         return;
       }
       const hospitalCapacity = hospitalCapacityRaw ? Number(hospitalCapacityRaw) : null;
+      const hospitalLocation = state.hospitalLocation || null;
       await api("/auth/register", {
         method: "POST",
         body: JSON.stringify({
@@ -176,8 +183,11 @@ async function handleAuthSubmit(e) {
           hospitalAddress,
           hospitalCity,
           hospitalState,
+          hospitalDistrict,
+          hospitalPincode,
           hospitalPhone,
-          hospitalCapacity
+          hospitalCapacity,
+          hospitalLocation
         })
       });
       setAuthMessage("Registered successfully. You can now log in.", "success");
@@ -259,11 +269,57 @@ function handleLogout() {
   setAuthMessage("Logged out. You can safely close this tab.", "info");
 }
 
+async function useHospitalLocation() {
+  if (!navigator.geolocation) {
+    setAuthMessage("Geolocation is not supported.", "error");
+    return;
+  }
+  const btn = els.btnUseHospitalLocation;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Locating…";
+  }
+  try {
+    const pos = await new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 0
+      });
+    });
+    const lat = pos.coords.latitude;
+    const lon = pos.coords.longitude;
+    state.hospitalLocation = { lat, lon };
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`;
+    const res = await fetch(url, { headers: { Accept: "application/json" } });
+    if (!res.ok) throw new Error("Geocoding failed");
+    const data = await res.json();
+    const addr = data.address || {};
+    if (els.authHospitalAddress) els.authHospitalAddress.value = data.display_name || "";
+    if (els.authHospitalCity) els.authHospitalCity.value = addr.city || addr.town || addr.village || addr.county || "";
+    if (els.authHospitalDistrict) els.authHospitalDistrict.value = addr.state_district || addr.county || "";
+    if (els.authHospitalState) els.authHospitalState.value = addr.state || "";
+    if (els.authHospitalPincode) els.authHospitalPincode.value = addr.postcode || "";
+    setAuthMessage("Location set. Verify the address and fill any missing fields.", "success");
+  } catch (e) {
+    console.error(e);
+    setAuthMessage("Could not get location. Please enter address manually.", "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Use my current location";
+    }
+  }
+}
+
 function boot() {
   setMode("login");
 
   els.btnModeLogin.addEventListener("click", () => setMode("login"));
   els.btnModeRegister.addEventListener("click", () => setMode("register"));
+  if (els.btnUseHospitalLocation) {
+    els.btnUseHospitalLocation.addEventListener("click", () => useHospitalLocation());
+  }
   els.authForm.addEventListener("submit", (e) => {
     handleAuthSubmit(e);
   });

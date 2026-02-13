@@ -270,7 +270,42 @@
                       <option value="distance" selected>Distance</option>
                       <option value="beds">Available beds</option>
                       <option value="name">Name</option>
+                      <option value="rating">Rating</option>
                     </select>
+                  </div>
+                </div>
+
+                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <div class="sm:col-span-1">
+                    <label for="minRating" class="text-sm font-medium text-slate-800">Min. rating</label>
+                    <select
+                      id="minRating"
+                      class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm shadow-sm outline-none transition focus:border-calm-300 focus:ring-2 focus:ring-calm-100"
+                    >
+                      <option value="0" selected>Any</option>
+                      <option value="3">3+ stars</option>
+                      <option value="3.5">3.5+ stars</option>
+                      <option value="4">4+ stars</option>
+                      <option value="4.5">4.5+ stars</option>
+                    </select>
+                  </div>
+                  <div class="flex items-end gap-2 sm:col-span-1">
+                    <label class="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm">
+                      <input id="filterEmergency" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-calm-600" />
+                      <span class="font-medium text-slate-800">Emergency only</span>
+                    </label>
+                  </div>
+                  <div class="flex items-end gap-2 sm:col-span-1">
+                    <label class="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm">
+                      <input id="filterIcu" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-calm-600" />
+                      <span class="font-medium text-slate-800">Has ICU</span>
+                    </label>
+                  </div>
+                  <div class="flex items-end gap-2 sm:col-span-1">
+                    <label class="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm">
+                      <input id="filter24x7" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-calm-600" />
+                      <span class="font-medium text-slate-800">24×7 open</span>
+                    </label>
                   </div>
                 </div>
 

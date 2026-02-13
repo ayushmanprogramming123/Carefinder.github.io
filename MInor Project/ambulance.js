@@ -308,11 +308,18 @@ function updateMarkers(trip) {
 
   if (!ambulanceMarker) {
     const ambIcon = L.divIcon({
-      className: "",
-      html:
-        '<div style="background:#b91c1c;color:#fff;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:600;">AMB</div>',
-      iconSize: [30, 18],
-      iconAnchor: [15, 9]
+      className: "ambulance-marker",
+      html: `<div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:#dc2626;border:2px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 9a3 3 0 0 1 3-3h7.17a3 3 0 0 1 2.12.88l2.83 2.83A3 3 0 0 1 20 12.83V16a2 2 0 0 1-2 2h-1.5"/>
+          <path d="M4 9v7a2 2 0 0 0 2 2h1.5"/>
+          <circle cx="8" cy="18" r="1.4"/>
+          <circle cx="17" cy="18" r="1.4"/>
+          <path d="M9.5 10.5v5m2.5-2.5H7"/>
+        </svg>
+      </div>`,
+      iconSize: [40, 40],
+      iconAnchor: [20, 20]
     });
     ambulanceMarker = L.marker([a.lat, a.lon], {
       title: "Ambulance",
@@ -440,7 +447,7 @@ async function startTracking(tripId) {
   }
 
   await poll();
-  trackTimer = setInterval(poll, 5000);
+  trackTimer = setInterval(poll, 2000);
 }
 
 async function handleRequest(e) {
@@ -472,6 +479,9 @@ async function handleRequest(e) {
 
   // Step 1: Show "Dispatching an ambulance for you" popup immediately
   showAmbulanceToast("Dispatching an ambulance for you", "Please wait while we assign the nearest available unit…", "dispatching");
+
+  // Simulate dispatch delay (5 seconds) before API call
+  await new Promise((r) => setTimeout(r, 5000));
 
   try {
     // If a dropping hospital name is provided but we don't yet have coordinates,
@@ -519,11 +529,11 @@ async function handleRequest(e) {
       "success"
     );
 
-    // Step 2: After 3 seconds, show "Ambulance is on its way" popup
+    // Step 2: After 8 seconds, show "Ambulance is on its way" popup
     toastTimeout = setTimeout(() => {
       showAmbulanceToast("Ambulance is on its way", "Keep your phone available. Track live on the map above.", "on_way");
-      toastTimeout = setTimeout(hideAmbulanceToast, 5000);
-    }, 3000);
+      toastTimeout = setTimeout(hideAmbulanceToast, 6000);
+    }, 8000);
 
     // Show confirmation modal with key details
     if (els.confirmBody && els.confirmModal) {

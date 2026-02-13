@@ -15,6 +15,14 @@
       "role": "hospital_staff",
       "hospitalKey": "ayushman-hospital",
       "passwordHash": "$2a$10$rRTkI4IWPuH6HvD1VR0PPeZFJqxFl9Axue6zCSbDE0sVZn18hcTbO"
+    },
+    {
+      "id": "user_mlkj3925",
+      "name": "Ayushman Baksi",
+      "email": "Ayushman11@gmail.com",
+      "role": "hospital_staff",
+      "hospitalKey": "ayushman-hospital",
+      "passwordHash": "$2a$10$0rjeslwWL9BM6fphFnnoKukc0ePSd3geOajNsSk2XMEpa6v7iYqdK"
     }
   ],
   "hospitals": [
@@ -29,7 +37,7 @@
       "normalizedName": "pradyumna bal memorial kalinga inst of medical",
       "beds": {
         "available": 23,
-        "capacity": 121,
+        "capacity": 125,
         "icu": 8,
         "emergency": true
       }
@@ -40,9 +48,9 @@
       "aliases": [],
       "normalizedName": "ayushman",
       "beds": {
-        "available": 0,
+        "available": 2,
         "capacity": 8,
-        "icu": 0,
+        "icu": 2,
         "emergency": true
       },
       "contact": {
