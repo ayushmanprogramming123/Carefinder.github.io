@@ -159,6 +159,18 @@ function badgeForBeds(available) {
   return { text: "Available", cls: "bg-calm-100 text-calm-900" };
 }
 
+// Generate OSM tile URL for map-based thumbnail (zoom 16, single tile, performance-optimized)
+function getMapThumbnailUrl(lat, lon) {
+  const z = 16;
+  const n = Math.pow(2, z);
+  const x = Math.floor(((lon + 180) / 360) * n);
+  const latRad = (lat * Math.PI) / 180;
+  const y = Math.floor(
+    ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n
+  );
+  return `https://tile.openstreetmap.org/${z}/${x}/${y}.png`;
+}
+
 function buildBedCategoriesForHospital(h, beds) {
   const seed = Number(String(h.id || "").replace(/[^\d]/g, "")) || 98765;
   const rand = mulberry32(seed);
@@ -446,12 +458,26 @@ function renderCards(hospitals) {
     const phone = h.phone ? escapeHtml(h.phone) : null;
     const website = h.website ? escapeHtml(h.website) : null;
 
+    const thumbnailUrl = getMapThumbnailUrl(h.lat, h.lon);
+
     const card = document.createElement("article");
     card.className =
       "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-soft";
     card.innerHTML = `
       <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div class="min-w-0">
+        <div class="flex gap-4 min-w-0 flex-1">
+          <div class="shrink-0">
+            <img
+              src="${escapeHtml(thumbnailUrl)}"
+              alt="Map location of ${escapeHtml(h.name)}"
+              loading="lazy"
+              decoding="async"
+              class="h-20 w-28 rounded-xl object-cover ring-1 ring-slate-100 sm:h-24 sm:w-32"
+              width="128"
+              height="96"
+            />
+          </div>
+          <div class="min-w-0 flex-1">
           <div class="flex flex-wrap items-center gap-2">
             <h3 class="truncate text-base font-semibold text-slate-900">${escapeHtml(h.name)}</h3>
             <span class="rounded-full px-2.5 py-1 text-xs font-semibold ${badge.cls}">${escapeHtml(badge.text)}</span>
@@ -460,6 +486,7 @@ function renderCards(hospitals) {
             <span class="font-medium text-slate-800">${h.distanceKm.toFixed(2)} km</span> away
           </div>
           <div class="mt-2 text-sm text-slate-700">${addr}</div>
+          </div>
         </div>
 
         <div class="flex shrink-0 flex-wrap items-center gap-2">

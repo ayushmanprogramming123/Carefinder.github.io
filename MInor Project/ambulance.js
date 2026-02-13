@@ -18,7 +18,11 @@ const els = {
   btnConfirmClose: document.getElementById("btnConfirmClose"),
   btnConfirmOk: document.getElementById("btnConfirmOk"),
   nearestHospitalsStatus: document.getElementById("nearestHospitalsStatus"),
-  nearestHospitalsList: document.getElementById("nearestHospitalsList")
+  nearestHospitalsList: document.getElementById("nearestHospitalsList"),
+  ambulanceToast: document.getElementById("ambulanceToast"),
+  ambulanceToastTitle: document.getElementById("ambulanceToastTitle"),
+  ambulanceToastSub: document.getElementById("ambulanceToastSub"),
+  ambulanceToastIcon: document.getElementById("ambulanceToastIcon")
 };
 
 let map = null;
@@ -161,6 +165,45 @@ function setTrackStatus(msg, kind = "info") {
   };
   els.trackStatus.className = `${base} ${map[kind] || map.info}`;
   els.trackStatus.textContent = msg || "";
+}
+
+let toastTimeout = null;
+
+function showAmbulanceToast(title, sub, kind = "dispatching") {
+  if (toastTimeout) {
+    clearTimeout(toastTimeout);
+    toastTimeout = null;
+  }
+  if (!els.ambulanceToast || !els.ambulanceToastTitle || !els.ambulanceToastSub || !els.ambulanceToastIcon) return;
+  els.ambulanceToastTitle.textContent = title;
+  els.ambulanceToastSub.textContent = sub || "";
+  els.ambulanceToastIcon.className = "grid h-10 w-10 shrink-0 place-items-center rounded-xl ";
+  if (kind === "arrived") {
+    els.ambulanceToastIcon.classList.add("bg-emerald-50");
+    els.ambulanceToastIcon.innerHTML =
+      '<svg class="h-5 w-5 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10"/></svg>';
+  } else if (kind === "on_way") {
+    els.ambulanceToastIcon.classList.add("bg-sky-50");
+    els.ambulanceToastIcon.innerHTML =
+      '<svg class="h-5 w-5 text-sky-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 9a3 3 0 0 1 3-3h7.17a3 3 0 0 1 2.12.88l2.83 2.83" stroke-linecap="round"/><circle cx="8" cy="18" r="1.4"/><circle cx="17" cy="18" r="1.4"/></svg>';
+  } else {
+    els.ambulanceToastIcon.classList.add("bg-rose-50");
+    els.ambulanceToastIcon.innerHTML =
+      '<svg class="h-5 w-5 text-rose-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 9a3 3 0 0 1 3-3h7.17a3 3 0 0 1 2.12.88l2.83 2.83A3 3 0 0 1 20 12.83V16a2 2 0 0 1-2 2h-1.5" stroke-linecap="round"/><path d="M4 9v7a2 2 0 0 0 2 2h1.5" stroke-linecap="round"/><circle cx="8" cy="18" r="1.4"/><circle cx="17" cy="18" r="1.4"/></svg>';
+  }
+  els.ambulanceToast.classList.remove("hidden");
+  els.ambulanceToast.classList.add("flex");
+}
+
+function hideAmbulanceToast() {
+  if (toastTimeout) {
+    clearTimeout(toastTimeout);
+    toastTimeout = null;
+  }
+  if (els.ambulanceToast) {
+    els.ambulanceToast.classList.add("hidden");
+    els.ambulanceToast.classList.remove("flex");
+  }
 }
 
 async function api(path, options = {}) {
@@ -381,6 +424,10 @@ async function startTracking(tripId) {
       updateMarkers(trip);
       if (trip.status === "arrived") {
         setTrackStatus("Ambulance has arrived at your location.", "success");
+        // Step 3: Show "Ambulance has arrived" popup when ambulance actually arrives
+        showAmbulanceToast("Ambulance has arrived", "The ambulance is now at your location. Please proceed.", "arrived");
+        if (toastTimeout) clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(hideAmbulanceToast, 6000);
         clearInterval(trackTimer);
         trackTimer = null;
       } else if (trip.status === "en_route") {
@@ -422,6 +469,9 @@ async function handleRequest(e) {
   els.btnRequest.disabled = true;
   els.btnRequest.textContent = "Requesting…";
   setRequestMessage("Submitting your request and assigning the nearest ambulance…", "info");
+
+  // Step 1: Show "Dispatching an ambulance for you" popup immediately
+  showAmbulanceToast("Dispatching an ambulance for you", "Please wait while we assign the nearest available unit…", "dispatching");
 
   try {
     // If a dropping hospital name is provided but we don't yet have coordinates,
@@ -468,6 +518,12 @@ async function handleRequest(e) {
       `Ambulance assigned (${t.ambulanceCode}). Estimated arrival in ${t.etaMinutes.toFixed(1)} minutes.`,
       "success"
     );
+
+    // Step 2: After 3 seconds, show "Ambulance is on its way" popup
+    toastTimeout = setTimeout(() => {
+      showAmbulanceToast("Ambulance is on its way", "Keep your phone available. Track live on the map above.", "on_way");
+      toastTimeout = setTimeout(hideAmbulanceToast, 5000);
+    }, 3000);
 
     // Show confirmation modal with key details
     if (els.confirmBody && els.confirmModal) {

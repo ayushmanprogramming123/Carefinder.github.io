@@ -126,6 +126,115 @@ function buildFacilities(h) {
     .join("");
 }
 
+// Medical tests and facilities with pricing (demo - varies by hospital id)
+const MEDICAL_TESTS = [
+  { name: "Complete Blood Count (CBC)", price: 350, img: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=400&q=80" },
+  { name: "Lipid Profile", price: 550, img: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=400&q=80" },
+  { name: "Thyroid Function Test (T3, T4, TSH)", price: 650, img: "https://images.unsplash.com/photo-1559757175-5700dde675bc?auto=format&fit=crop&w=400&q=80" },
+  { name: "Blood Sugar (Fasting & PP)", price: 200, img: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=400&q=80" },
+  { name: "X-Ray (Chest)", price: 450, img: "https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=400&q=80" },
+  { name: "Ultrasound (Abdomen)", price: 900, img: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=400&q=80" },
+  { name: "ECG", price: 350, img: "https://images.unsplash.com/photo-1559757175-5700dde675bc?auto=format&fit=crop&w=400&q=80" },
+  { name: "MRI (single region)", price: 4500, img: "https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=400&q=80" },
+  { name: "CT Scan (single region)", price: 2800, img: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=400&q=80" },
+  { name: "Liver Function Test", price: 500, img: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=400&q=80" },
+  { name: "Kidney Function Test", price: 480, img: "https://images.unsplash.com/photo-1559757175-5700dde675bc?auto=format&fit=crop&w=400&q=80" },
+  { name: "ECG Stress Test", price: 1200, img: "https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=400&q=80" }
+];
+
+const MEDICAL_FACILITIES = [
+  { name: "24x7 Emergency", price: null, img: "https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?auto=format&fit=crop&w=400&q=80" },
+  { name: "Intensive Care Unit (ICU)", price: null, img: "https://images.unsplash.com/photo-1584466977773-e625c37cdd50?auto=format&fit=crop&w=400&q=80" },
+  { name: "Radiology & Imaging", price: null, img: "https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=400&q=80" },
+  { name: "Pathology Lab", price: null, img: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=400&q=80" },
+  { name: "Operation Theatre", price: null, img: "https://images.unsplash.com/photo-1551076805-e1869033e561?auto=format&fit=crop&w=400&q=80" },
+  { name: "Pharmacy", price: null, img: "https://images.unsplash.com/photo-1587854692152-cbe660dbde88?auto=format&fit=crop&w=400&q=80" }
+];
+
+function mulberry32(seed) {
+  let t = (seed >>> 0) + 0x6d2b79f5;
+  return function () {
+    t = Math.imul(t ^ (t >>> 15), 1 | t);
+    t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function buildMedicalTestsAndFacilities(h) {
+  const wrap = document.getElementById("medicalTestsWrapper");
+  if (!wrap) return;
+
+  const numeric = Number(String(h.id || "").replace(/[^\d]/g, "")) || 123456;
+  const rand = mulberry32(numeric);
+
+  const numTests = 4 + Math.floor(rand() * 5);
+  const selectedTests = [];
+  const used = new Set();
+  while (selectedTests.length < Math.min(numTests, MEDICAL_TESTS.length)) {
+    const idx = Math.floor(rand() * MEDICAL_TESTS.length);
+    if (!used.has(idx)) {
+      used.add(idx);
+      const t = MEDICAL_TESTS[idx];
+      const surge = 0.85 + rand() * 0.3;
+      selectedTests.push({ ...t, price: Math.round(t.price * surge) });
+    }
+  }
+
+  const numFacilities = 3 + Math.floor(rand() * 3);
+  const selectedFacilities = [];
+  const usedF = new Set();
+  while (selectedFacilities.length < Math.min(numFacilities, MEDICAL_FACILITIES.length)) {
+    const idx = Math.floor(rand() * MEDICAL_FACILITIES.length);
+    if (!usedF.has(idx)) {
+      usedF.add(idx);
+      selectedFacilities.push(MEDICAL_FACILITIES[idx]);
+    }
+  }
+
+  const testCards = selectedTests
+    .map(
+      (t) => `
+    <div class="flex gap-3 rounded-xl border border-slate-100 bg-slate-50/80 p-3">
+      <div class="h-16 w-20 shrink-0 overflow-hidden rounded-lg bg-slate-200">
+        <img src="${escapeHtml(t.img)}" alt="" class="h-full w-full object-cover" loading="lazy" />
+      </div>
+      <div class="min-w-0 flex-1">
+        <p class="text-xs font-semibold text-slate-900">${escapeHtml(t.name)}</p>
+        <p class="mt-0.5 text-[11px] font-medium text-calm-700">₹${t.price.toLocaleString("en-IN")}</p>
+      </div>
+    </div>
+  `
+    )
+    .join("");
+
+  const facilityCards = selectedFacilities
+    .map(
+      (f) => `
+    <div class="flex gap-3 rounded-xl border border-slate-100 bg-slate-50/80 p-3">
+      <div class="h-16 w-20 shrink-0 overflow-hidden rounded-lg bg-slate-200">
+        <img src="${escapeHtml(f.img)}" alt="" class="h-full w-full object-cover" loading="lazy" />
+      </div>
+      <div class="min-w-0 flex-1">
+        <p class="text-xs font-semibold text-slate-900">${escapeHtml(f.name)}</p>
+        <p class="mt-0.5 text-[11px] text-slate-600">Available at this hospital</p>
+      </div>
+    </div>
+  `
+    )
+    .join("");
+
+  wrap.innerHTML = `
+    <div class="sm:col-span-2">
+      <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Diagnostic tests (indicative pricing)</p>
+      <div class="grid gap-2 sm:grid-cols-2">${testCards}</div>
+    </div>
+    <div class="sm:col-span-2">
+      <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Medical facilities</p>
+      <div class="grid gap-2 sm:grid-cols-2">${facilityCards}</div>
+    </div>
+  `;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const yearSpan = document.getElementById("yearSpanHospital");
   if (yearSpan) yearSpan.textContent = new Date().getFullYear().toString();
@@ -227,6 +336,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   buildFacilities(h);
   buildBedTable(h);
+  buildMedicalTestsAndFacilities(h);
   initMapForHospital(h);
 });
 
