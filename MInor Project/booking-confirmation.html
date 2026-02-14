@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CareFinder • Booking Confirmed</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              calm: {
+                50: "#f2fbfb", 100: "#dcf4f4", 200: "#b9e7e9", 300: "#86d2d7",
+                400: "#4db8c0", 500: "#2f9aa3", 600: "#247b83", 700: "#21636a",
+                800: "#205158", 900: "#1f444b"
+              }
+            }
+          }
+        }
+      };
+    </script>
+  </head>
+  <body class="min-h-screen bg-gradient-to-b from-calm-50 via-white to-white text-slate-900">
+    <header class="sticky top-0 z-40 border-b border-calm-100 bg-white/80 backdrop-blur">
+      <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+        <div class="flex items-center gap-3">
+          <button id="btnNavMenu" type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700">
+            <span class="sr-only">Open navigation</span>
+            <div class="flex flex-col gap-[3px]"><span class="block h-0.5 w-4 rounded bg-slate-800"></span><span class="block h-0.5 w-4 rounded bg-slate-800"></span><span class="block h-0.5 w-4 rounded bg-slate-800"></span></div>
+          </button>
+          <div class="text-base font-semibold">CareFinder</div>
+        </div>
+        <nav class="hidden sm:flex items-center gap-2">
+          <a href="./appointments.html" class="rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-calm-50">My appointments</a>
+          <a href="./hospitals.html" class="rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-calm-50">Find hospitals</a>
+          <a href="./index.html" class="rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-calm-50">Home</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-lg px-4 pb-12 pt-10">
+      <div class="rounded-2xl border border-emerald-100 bg-white p-6 shadow-sm">
+        <div class="flex items-center gap-3 text-emerald-700">
+          <div class="grid h-12 w-12 place-items-center rounded-full bg-emerald-100">
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <div>
+            <h1 class="text-xl font-semibold text-slate-900">Booking Confirmed</h1>
+            <p class="text-sm text-slate-600">Your appointment has been successfully booked.</p>
+          </div>
+        </div>
+
+        <dl id="confirmDetails" class="mt-6 space-y-3 text-sm">
+          <div class="flex justify-between border-b border-slate-100 py-2">
+            <dt class="font-medium text-slate-600">Booking ID</dt>
+            <dd id="bookingId" class="font-mono font-semibold text-slate-900">—</dd>
+          </div>
+          <div class="flex justify-between border-b border-slate-100 py-2">
+            <dt class="font-medium text-slate-600">Booking date</dt>
+            <dd id="bookingDate">—</dd>
+          </div>
+          <div class="flex justify-between border-b border-slate-100 py-2">
+            <dt class="font-medium text-slate-600">Booking time</dt>
+            <dd id="bookingTime">—</dd>
+          </div>
+          <div class="flex justify-between border-b border-slate-100 py-2">
+            <dt class="font-medium text-slate-600">Appointment date</dt>
+            <dd id="apptDate">—</dd>
+          </div>
+          <div class="flex justify-between border-b border-slate-100 py-2">
+            <dt class="font-medium text-slate-600">Appointment time</dt>
+            <dd id="apptTime">—</dd>
+          </div>
+          <div class="flex justify-between border-b border-slate-100 py-2" id="doctorRow">
+            <dt class="font-medium text-slate-600">Doctor</dt>
+            <dd id="doctorName">—</dd>
+          </div>
+          <div class="flex justify-between border-b border-slate-100 py-2" id="testRow">
+            <dt class="font-medium text-slate-600">Test</dt>
+            <dd id="testName">—</dd>
+          </div>
+          <div class="flex justify-between border-b border-slate-100 py-2">
+            <dt class="font-medium text-slate-600">Hospital</dt>
+            <dd id="hospitalName">—</dd>
+          </div>
+          <div class="flex justify-between py-2">
+            <dt class="font-medium text-slate-600">Fee</dt>
+            <dd id="fee" class="font-semibold text-calm-700">—</dd>
+          </div>
+        </dl>
+
+        <div class="mt-6 flex gap-3">
+          <a href="./appointments.html" class="flex-1 rounded-xl bg-calm-600 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-calm-700">View all appointments</a>
+          <a href="./hospitals.html" class="flex-1 rounded-xl border border-calm-200 px-4 py-2.5 text-center text-sm font-semibold text-calm-800 hover:bg-calm-50">Find hospitals</a>
+        </div>
+      </div>
+    </main>
+
+    <div id="navOverlay" class="fixed inset-0 z-40 bg-slate-900/40 opacity-0 transition-opacity duration-300 pointer-events-none"></div>
+    <aside id="navDrawer" class="fixed inset-y-0 left-0 z-50 w-64 max-w-[80%] -translate-x-full transform bg-white shadow-xl ring-1 ring-slate-200 transition-transform duration-300" aria-label="Main navigation">
+      <div class="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
+        <div class="flex items-center gap-2">
+          <div class="grid h-8 w-8 place-items-center rounded-lg bg-calm-50 text-calm-700">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2C9.24 2 7 4.24 7 7v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7c0-2.76-2.24-5-5-5Z"/><path d="M9 14h6M12 11v6" stroke-linecap="round"/></svg>
+          </div>
+          <div><p class="text-sm font-semibold text-slate-900">CareFinder</p><p class="text-[11px] text-slate-500">Booking confirmed</p></div>
+        </div>
+        <button id="btnNavClose" type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50"><span class="sr-only">Close</span>✕</button>
+      </div>
+      <div id="navPatientProfile" class="border-b border-slate-100 px-4 py-3 hidden">
+        <div class="flex items-center gap-3">
+          <div id="navPatientAvatar" class="h-10 w-10 shrink-0 rounded-full bg-calm-100 flex items-center justify-center text-calm-700 font-semibold text-sm">?</div>
+          <div class="min-w-0"><p id="navPatientName" class="text-sm font-semibold text-slate-900 truncate">—</p><a href="./my-account.html" class="text-[11px] text-calm-600 hover:text-calm-800">My Account</a></div>
+        </div>
+      </div>
+      <nav class="px-3 py-3 text-sm text-slate-800">
+        <a href="./index.html#hero" class="block rounded-lg px-3 py-2 hover:bg-calm-50">Home</a>
+        <a href="./hospitals.html" class="mt-1 block rounded-lg px-3 py-2 hover:bg-calm-50">Hospital finder</a>
+        <a href="./appointments.html" class="mt-1 block rounded-lg px-3 py-2 hover:bg-calm-50">My appointments</a>
+        <a href="./my-account.html" class="mt-1 block rounded-lg px-3 py-2 hover:bg-calm-50">My Account</a>
+        <a href="./patient.html" class="mt-1 block rounded-lg px-3 py-2 hover:bg-calm-50">Patient login</a>
+        <a href="./ambulance.html" class="mt-1 block rounded-lg px-3 py-2 hover:bg-calm-50">Book ambulance</a>
+        <a href="./admin.html#register" class="mt-3 block rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">Register a hospital</a>
+      </nav>
+    </aside>
+
+    <footer class="border-t border-calm-100 bg-white">
+      <div class="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+        <div>© <span id="yearSpanConfirm"></span> CareFinder.</div>
+        <div class="flex flex-wrap gap-3">
+          <a href="./index.html#about" class="hover:text-slate-700">About</a>
+          <a href="./privacy.html" class="hover:text-slate-700">Privacy</a>
+          <a href="./terms.html" class="hover:text-slate-700">Terms</a>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const data = sessionStorage.getItem("carefinder_last_booking");
+        if (!data) {
+          window.location.href = "./hospitals.html";
+          return;
+        }
+        const apt = JSON.parse(data);
+        const booked = new Date(apt.bookedAt);
+        document.getElementById("bookingId").textContent = apt.id || "—";
+        document.getElementById("bookingDate").textContent = booked.toLocaleDateString("en-IN");
+        document.getElementById("bookingTime").textContent = booked.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+        document.getElementById("apptDate").textContent = apt.appointmentDate || "—";
+        document.getElementById("apptTime").textContent = apt.appointmentTime || "—";
+        document.getElementById("doctorName").textContent = apt.doctorName || "—";
+        document.getElementById("testName").textContent = apt.testName || "—";
+        document.getElementById("hospitalName").textContent = apt.hospitalName || "—";
+        document.getElementById("fee").textContent = apt.fee ? `₹${apt.fee}` : "—";
+        document.getElementById("doctorRow").style.display = apt.type === "doctor" ? "flex" : "none";
+        document.getElementById("testRow").style.display = apt.type === "test" ? "flex" : "none";
+        const ys = document.getElementById("yearSpanConfirm");
+        if (ys) ys.textContent = new Date().getFullYear().toString();
+      });
+    </script>
+    <script defer src="./navigation.js"></script>
+  </body>
+</html>

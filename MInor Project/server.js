@@ -26,6 +26,8 @@ function loadData() {
     const raw = fs.readFileSync(DATA_PATH, "utf8");
     const parsed = JSON.parse(raw);
     if (!parsed.users || !parsed.hospitals) throw new Error("Invalid data");
+    if (!parsed.patients) parsed.patients = [];
+    if (!parsed.appointments) parsed.appointments = [];
     return parsed;
   } catch (e) {
     console.error("Failed to read backend-data.json, reseeding:", e.message);
@@ -82,6 +84,8 @@ function seedInitialData() {
     "Pradyumna Bal Memorial Hospital (Kalinga Inst Of Medical hospital)";
 
   const data = {
+    patients: [],
+    appointments: [],
     users: [
       {
         id: "user_kiims_admin",
@@ -101,12 +105,13 @@ function seedInitialData() {
         lat: 20.2961,
         lon: 85.8245,
         contact: {
-          address: "KIIT Road, Patia, Bhubaneswar",
+          address: "KIIT Road, Patia, Bhubaneswar, Odisha 751024",
           city: "Bhubaneswar",
           state: "Odisha",
           district: "Khordha",
           pincode: "751024",
-          phone: ""
+          phone: "0674-2725444",
+          phone24x7: "0674-2725444"
         },
         beds: {
           available: 25,
@@ -128,6 +133,39 @@ let db = loadData();
 
 // In-memory ambulance trips (for demo)
 const trips = new Map(); // id -> trip
+
+// In-memory patients and appointments (demo - use DB in production)
+if (!db.patients) db.patients = [];
+if (!db.appointments) db.appointments = [];
+
+// Seed doctors (demo - from various medical specialties)
+const DOCTORS = [
+  { id: "doc1", name: "Dr. Rajesh Kumar", specialty: "Cardiology", gender: "male", experience: 18, img: "https://images.pexels.com/photos/4173239/pexels-photo-4173239.jpeg?auto=compress&w=200", hospitalKey: "kiims", fee: 800 },
+  { id: "doc2", name: "Dr. Priya Sharma", specialty: "Pediatrics", gender: "female", experience: 12, img: "https://images.pexels.com/photos/7659572/pexels-photo-7659572.jpeg?auto=compress&w=200", hospitalKey: "kiims", fee: 600 },
+  { id: "doc3", name: "Dr. Amit Patel", specialty: "Orthopedics", gender: "male", experience: 15, img: "https://images.pexels.com/photos/5327656/pexels-photo-5327656.jpeg?auto=compress&w=200", hospitalKey: "kiims", fee: 750 },
+  { id: "doc4", name: "Dr. Sneha Reddy", specialty: "Dermatology", gender: "female", experience: 8, img: "https://images.pexels.com/photos/6749778/pexels-photo-6749778.jpeg?auto=compress&w=200", hospitalKey: "kiims", fee: 500 },
+  { id: "doc5", name: "Dr. Vikram Singh", specialty: "Neurology", gender: "male", experience: 22, img: "https://images.pexels.com/photos/5752302/pexels-photo-5752302.jpeg?auto=compress&w=200", hospitalKey: "kiims", fee: 1000 },
+  { id: "doc6", name: "Dr. Ananya Das", specialty: "Gynecology", gender: "female", experience: 14, img: "https://images.pexels.com/photos/7578896/pexels-photo-7578896.jpeg?auto=compress&w=200", hospitalKey: "kiims", fee: 700 },
+  { id: "doc7", name: "Dr. Sanjay Mehta", specialty: "General Surgery", gender: "male", experience: 20, img: "https://images.pexels.com/photos/1170979/pexels-photo-1170979.jpeg?auto=compress&w=200", hospitalKey: "kiims", fee: 900 },
+  { id: "doc8", name: "Dr. Kavita Nair", specialty: "ENT", gender: "female", experience: 10, img: "https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg?auto=compress&w=200", hospitalKey: "kiims", fee: 550 },
+  { id: "doc9", name: "Dr. Rahul Verma", specialty: "Psychiatry", gender: "male", experience: 11, img: "https://images.pexels.com/photos/3785077/pexels-photo-3785077.jpeg?auto=compress&w=200", hospitalKey: "kiims", fee: 650 },
+  { id: "doc10", name: "Dr. Meera Iyer", specialty: "Ophthalmology", gender: "female", experience: 16, img: "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&w=200", hospitalKey: "kiims", fee: 600 },
+  { id: "doc11", name: "Dr. Arjun Khanna", specialty: "Pulmonology", gender: "male", experience: 13, img: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&w=200", hospitalKey: "kiims", fee: 700 },
+  { id: "doc12", name: "Dr. Divya Gupta", specialty: "Nephrology", gender: "female", experience: 9, img: "https://images.pexels.com/photos/3785079/pexels-photo-3785079.jpeg?auto=compress&w=200", hospitalKey: "kiims", fee: 800 }
+];
+
+// Doctor availability: days 0=Sun..6=Sat, slots 9AM-8PM (15 min each = 44 slots)
+function getDoctorSlots() {
+  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const slots = [];
+  for (let h = 9; h <= 19; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      if (h === 19 && m > 0) break;
+      slots.push(`${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`);
+    }
+  }
+  return { days, slots };
+}
 
 // ---------- Express & middleware ----------
 
@@ -420,6 +458,153 @@ app.get("/api/hospitals/nearby", (req, res) => {
     .filter(Boolean)
     .sort((a, b) => a.distanceKm - b.distanceKm);
   return res.json({ hospitals: nearby });
+});
+
+app.get("/api/hospitals/search", (req, res) => {
+  const q = (req.query.q || "").trim().toLowerCase();
+  if (q.length < 2) return res.json({ hospitals: [] });
+  const norm = q.replace(/[\s,().-]+/g, " ");
+  const matches = db.hospitals.filter((h) => {
+    const nameMatch = (h.name || "").toLowerCase().includes(q) ||
+      (h.normalizedName || "").includes(norm) ||
+      (h.aliases || []).some((a) => String(a).toLowerCase().includes(q));
+    return nameMatch && Number.isFinite(h.lat) && Number.isFinite(h.lon);
+  });
+  const results = matches.map((h) => ({
+    id: `reg/${h.key}`,
+    osmUrl: null,
+    name: h.name,
+    lat: h.lat,
+    lon: h.lon,
+    address: h.contact?.address || "",
+    phone: h.contact?.phone || h.contact?.phone24x7 || null,
+    website: null,
+    beds: h.beds || { available: 0, capacity: 0, icu: 0, emergency: false },
+    fromBackend: true
+  }));
+  return res.json({ hospitals: results });
+});
+
+// ---------- Doctors ----------
+app.get("/api/doctors", (req, res) => {
+  const specialty = req.query.specialty;
+  let list = [...DOCTORS];
+  if (specialty) list = list.filter((d) => d.specialty === specialty);
+  const { days, slots } = getDoctorSlots();
+  const withSlots = list.map((d) => ({
+    ...d,
+    availableDays: [1, 2, 3, 4, 5],
+    availableSlots: slots
+  }));
+  return res.json({ doctors: withSlots, days, slots });
+});
+
+// ---------- Patients ----------
+app.post("/api/patients/register", (req, res) => {
+  const { name, age, gender, address, email, mobile } = req.body || {};
+  if (!name || !age || !gender || !address || !email || !mobile) {
+    return res.status(400).json({ error: "name, age, gender, address, email, mobile are required" });
+  }
+  const ageNum = parseInt(age, 10);
+  if (!Number.isFinite(ageNum) || ageNum < 1 || ageNum > 120) {
+    return res.status(400).json({ error: "Invalid age" });
+  }
+  if (!["male", "female", "other"].includes(String(gender).toLowerCase())) {
+    return res.status(400).json({ error: "Invalid gender" });
+  }
+  const addressStr = String(address || "").trim();
+  if (!addressStr || addressStr.length < 5) {
+    return res.status(400).json({ error: "Address is required (min 5 characters)" });
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(String(email))) {
+    return res.status(400).json({ error: "Invalid email" });
+  }
+  const mobileClean = String(mobile).replace(/\D/g, "");
+  if (mobileClean.length !== 10 || !/^\d{10}$/.test(mobileClean)) {
+    return res.status(400).json({ error: "Invalid 10-digit Indian mobile number" });
+  }
+  const existing = db.patients.find(
+    (p) => p.email.toLowerCase() === String(email).toLowerCase() || p.mobile === mobileClean
+  );
+  if (existing) {
+    return res.status(409).json({ error: "Email or mobile already registered" });
+  }
+  const patient = {
+    id: `pat_${Date.now().toString(36)}`,
+    name,
+    age: ageNum,
+    gender: String(gender).toLowerCase(),
+    address: addressStr,
+    email,
+    mobile: mobileClean
+  };
+  db.patients.push(patient);
+  saveData(db);
+  const token = jwt.sign(
+    { sub: patient.id, role: "patient" },
+    JWT_SECRET,
+    { expiresIn: "30d" }
+  );
+  return res.status(201).json({ token, patient });
+});
+
+app.post("/api/patients/login", (req, res) => {
+  const { email, mobile, password } = req.body || {};
+  const byEmail = email && db.patients.find((p) => p.email.toLowerCase() === String(email).toLowerCase());
+  const byMobile = mobile && db.patients.find((p) => p.mobile === String(mobile).replace(/\D/g, ""));
+  const patient = byEmail || byMobile;
+  if (!patient) return res.status(401).json({ error: "Patient not found" });
+  const token = jwt.sign(
+    { sub: patient.id, role: "patient" },
+    JWT_SECRET,
+    { expiresIn: "30d" }
+  );
+  return res.json({ token, patient });
+});
+
+// ---------- Appointments ----------
+app.post("/api/appointments", (req, res) => {
+  const { patientId, type, doctorId, testName, hospitalId, hospitalName, appointmentDate, appointmentTime, fee } = req.body || {};
+  if (!patientId || !type || !appointmentDate || !appointmentTime) {
+    return res.status(400).json({ error: "patientId, type, appointmentDate, appointmentTime required" });
+  }
+  const bookingId = `APT${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+  const appointment = {
+    id: bookingId,
+    patientId,
+    type,
+    doctorId: doctorId || null,
+    doctorName: null,
+    testName: testName || null,
+    hospitalId: hospitalId || null,
+    hospitalName: hospitalName || "",
+    appointmentDate,
+    appointmentTime,
+    fee: fee || 0,
+    bookedAt: new Date().toISOString(),
+    status: "confirmed"
+  };
+  if (doctorId && DOCTORS.find((d) => d.id === doctorId)) {
+    appointment.doctorName = DOCTORS.find((d) => d.id === doctorId).name;
+  }
+  db.appointments.push(appointment);
+  saveData(db);
+  return res.status(201).json({ appointment });
+});
+
+app.get("/api/appointments/patient/:patientId", (req, res) => {
+  const list = (db.appointments || []).filter((a) => a.patientId === req.params.patientId);
+  const now = new Date().toISOString().slice(0, 10);
+  const upcoming = list.filter((a) => a.appointmentDate >= now && a.status !== "cancelled").sort((a, b) => {
+    const d = a.appointmentDate.localeCompare(b.appointmentDate);
+    return d !== 0 ? d : (a.appointmentTime || "").localeCompare(b.appointmentTime || "");
+  });
+  const previous = list.filter((a) => a.appointmentDate < now || a.status === "cancelled").sort((a, b) => {
+    const d = b.appointmentDate.localeCompare(a.appointmentDate);
+    return d !== 0 ? d : (b.appointmentTime || "").localeCompare(a.appointmentTime || "");
+  });
+  return res.json({ upcoming, previous });
 });
 
 // ---------- Public bed availability route (used by frontend) ----------

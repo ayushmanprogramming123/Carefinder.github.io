@@ -19,6 +19,7 @@ const els = {
   btnConfirmOk: document.getElementById("btnConfirmOk"),
   nearestHospitalsStatus: document.getElementById("nearestHospitalsStatus"),
   nearestHospitalsList: document.getElementById("nearestHospitalsList"),
+  nearestHospitalsBox: document.getElementById("nearestHospitalsBox"),
   ambulanceToast: document.getElementById("ambulanceToast"),
   ambulanceToastTitle: document.getElementById("ambulanceToastTitle"),
   ambulanceToastSub: document.getElementById("ambulanceToastSub"),
@@ -99,6 +100,7 @@ async function loadNearestHospitalsForPickup() {
   if (!state.pickupLocation || !els.nearestHospitalsStatus || !els.nearestHospitalsList) return;
   const { lat, lon } = state.pickupLocation;
 
+  if (els.nearestHospitalsBox) els.nearestHospitalsBox.classList.remove("hidden");
   els.nearestHospitalsStatus.textContent = "Fetching nearby hospitals…";
   els.nearestHospitalsList.innerHTML = "";
 
@@ -107,6 +109,7 @@ async function loadNearestHospitalsForPickup() {
     if (!hospitals.length) {
       els.nearestHospitalsStatus.textContent =
         "No hospitals found within ~6 km of this pickup point.";
+      if (els.nearestHospitalsBox) els.nearestHospitalsBox.classList.add("hidden");
       return;
     }
     els.nearestHospitalsStatus.textContent =
@@ -376,12 +379,12 @@ function updateMarkers(trip) {
     }
   }
 
-  const bounds = [
+  const bounds = L.latLngBounds([
     [a.lat, a.lon],
     [p.lat, p.lon]
-  ];
-  if (d) bounds.push([d.lat, d.lon]);
-  map.fitBounds(bounds, { padding: [30, 30] });
+  ]);
+  if (d) bounds.extend([d.lat, d.lon]);
+  map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15, animate: true });
 
   els.metaAssignment.textContent = `${trip.ambulanceCode || "AMB"} • ${trip.ambulanceType.toUpperCase()} • ${
     trip.status
@@ -405,17 +408,16 @@ function updateMarkers(trip) {
 }
 
 function validateName(name) {
-  if (!name) return true; // optional, but if present must be valid
-  if (name.length < 2 || name.length > 80) return false;
-  return /^[a-zA-Z\s.'-]+$/.test(name);
+  if (!name || !name.trim()) return false;
+  const t = name.trim();
+  if (t.length < 2 || t.length > 80) return false;
+  return /^[a-zA-Z\s.'-]+$/.test(t);
 }
 
 function validateContactNumber(number) {
   if (!number) return false;
-  const trimmed = number.replace(/\s+/g, "");
-  if (!/^\d{10}$/.test(trimmed)) return false;
-  // Indian mobile numbers typically start with 6-9
-  return /^[6-9]/.test(trimmed);
+  const trimmed = String(number).replace(/\D/g, "");
+  return /^\d{10}$/.test(trimmed);
 }
 
 async function startTracking(tripId) {
@@ -464,12 +466,12 @@ async function handleRequest(e) {
   }
 
   if (!validateName(patientName)) {
-    setRequestMessage("Please enter a valid patient name (letters and spaces only).", "error");
+    setRequestMessage("Patient name is required (2–80 characters, letters and spaces).", "error");
     return;
   }
 
   if (!validateContactNumber(contactNumber)) {
-    setRequestMessage("Please enter a valid 10-digit mobile number starting with 6–9.", "error");
+    setRequestMessage("Please enter a valid 10-digit Indian contact number.", "error");
     return;
   }
 

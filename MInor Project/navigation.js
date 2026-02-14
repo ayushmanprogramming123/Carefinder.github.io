@@ -5,6 +5,29 @@ document.addEventListener("DOMContentLoaded", () => {
   const overlay = document.getElementById("navOverlay");
   const iconBars = menuButton ? menuButton.querySelectorAll("span.block") : null;
 
+  // Show patient avatar + name in sidebar when logged in
+  const profileEl = document.getElementById("navPatientProfile");
+  const avatarEl = document.getElementById("navPatientAvatar");
+  const nameEl = document.getElementById("navPatientName");
+  if (profileEl) {
+    try {
+      const raw = localStorage.getItem("carefinder_patient");
+      const patient = raw ? JSON.parse(raw) : null;
+      if (patient && patient.name) {
+        profileEl.classList.remove("hidden");
+        if (avatarEl) {
+          const initial = (patient.name || "").charAt(0).toUpperCase() || "?";
+          avatarEl.textContent = initial;
+        }
+        if (nameEl) nameEl.textContent = patient.name;
+      } else {
+        profileEl.classList.add("hidden");
+      }
+    } catch (_) {
+      profileEl.classList.add("hidden");
+    }
+  }
+
   if (!menuButton || !drawer || !overlay) return;
 
   const openDrawer = () => {

@@ -97,6 +97,16 @@ function fmtCoord({ lat, lon }) {
   return `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
 }
 
+function getUpdatedAgoText() {
+  const t = state.lastFetchAt || 0;
+  if (!t) return "Updated just now";
+  const sec = Math.floor((Date.now() - t) / 1000);
+  if (sec < 60) return "Updated just now";
+  if (sec < 120) return "Updated 1 minute ago";
+  if (sec < 3600) return `Updated ${Math.floor(sec / 60)} minutes ago`;
+  return "Updated recently";
+}
+
 function haversineKm(a, b) {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
@@ -571,17 +581,10 @@ function renderCards(hospitals) {
           >
             Focus on map
           </button>
-          <a
-            class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300"
-            href="${escapeHtml(h.osmUrl)}"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Open in OSM
-          </a>
+          ${h.osmUrl ? `<a class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300" href="${escapeHtml(h.osmUrl)}" target="_blank" rel="noreferrer">Open in OSM</a>` : ""}
         </div>
       </div>
-      <div class="mt-3">
+      <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
         <button
           type="button"
           class="inline-flex items-center justify-center rounded-xl border border-calm-100 bg-calm-50 px-3 py-2 text-xs font-semibold text-calm-900 shadow-sm transition hover:bg-calm-100 focus:outline-none focus:ring-2 focus:ring-calm-100"
@@ -589,6 +592,7 @@ function renderCards(hospitals) {
         >
           View hospital details
         </button>
+        <span class="text-[11px] text-slate-500">${getUpdatedAgoText()}</span>
       </div>
     `;
     els.cards.appendChild(card);
@@ -769,28 +773,65 @@ const suggestLocations = debounce(async () => {
   }
 }, 350);
 
+async function searchHospitalsByName(q) {
+  try {
+    const url = `${BACKEND.endpoint.replace("/bed-availability", "")}/hospitals/search?q=${encodeURIComponent(q)}`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const body = await res.json();
+    return body.hospitals || [];
+  } catch (e) {
+    return [];
+  }
+}
+
 async function searchLocation() {
   const q = (els.locationInput.value || "").trim();
   if (!q) return;
-  setStatus("Searching location…", "busy");
+  setStatus("Searching…", "busy");
   try {
-    const items = await geocodeNominatim(q);
-    if (!items.length) {
-      setStatus("No matches in India", "warn");
-      return;
+    let center = null;
+    let byName = [];
+    if (q.length >= 2) {
+      byName = await searchHospitalsByName(q);
+      if (byName.length > 0 && byName[0].lat && byName[0].lon) {
+        center = { lat: byName[0].lat, lon: byName[0].lon, label: byName[0].name || q };
+        setCenter(center);
+      }
     }
-    const it = items[0];
-    const lat = Number(it.lat);
-    const lon = Number(it.lon);
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-      setStatus("Invalid location result", "bad");
-      return;
+    if (!center) {
+      const items = await geocodeNominatim(q);
+      if (!items.length) {
+        setStatus(byName.length ? "Showing matching hospital(s)" : "No matches in India", byName.length ? "good" : "warn");
+        if (byName.length) {
+          state.center = { lat: byName[0].lat, lon: byName[0].lon, label: byName[0].name };
+          els.coordPill.textContent = fmtCoord(state.center);
+          els.coordHint.textContent = byName[0].name || "Hospital";
+          setButtonsEnabled(true);
+          setCenterOnMap(state.center);
+          const radiusMeters = Number(els.radius.value);
+          const registered = await fetchRegisteredHospitalsNearby(state.center, radiusMeters);
+          const withDist = byName.map((h) => ({ ...h, distanceKm: h.distanceKm ?? haversineKm(state.center, h) }));
+          state.hospitals = await loadBedAvailabilityForHospitals(withDist);
+          state.lastFetchAt = Date.now();
+          applyFiltersAndRender();
+        }
+        return;
+      }
+      const it = items[0];
+      const lat = Number(it.lat);
+      const lon = Number(it.lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+        setStatus("Invalid location result", "bad");
+        return;
+      }
+      if (!isWithinIndiaBBox({ lat, lon })) {
+        setStatus("Outside India (not supported)", "warn");
+        return;
+      }
+      center = { lat, lon, label: it.display_name || q };
+      setCenter(center);
     }
-    if (!isWithinIndiaBBox({ lat, lon })) {
-      setStatus("Outside India (not supported)", "warn");
-      return;
-    }
-    setCenter({ lat, lon, label: it.display_name || q });
     await refreshHospitals();
     setStatus("Showing nearby hospitals", "good");
   } catch (e) {

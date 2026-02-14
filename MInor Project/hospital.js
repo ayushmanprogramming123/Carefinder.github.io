@@ -201,6 +201,7 @@ function buildMedicalTestsAndFacilities(h) {
       <div class="min-w-0 flex-1">
         <p class="text-xs font-semibold text-slate-900">${escapeHtml(t.name)}</p>
         <p class="mt-0.5 text-[11px] font-medium text-calm-700">₹${t.price.toLocaleString("en-IN")}</p>
+        <button type="button" class="mt-2 rounded-lg bg-calm-600 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-calm-700" data-book-test="${escapeHtml(t.name)}" data-book-test-fee="${t.price}">Book test</button>
       </div>
     </div>
   `
@@ -226,7 +227,7 @@ function buildMedicalTestsAndFacilities(h) {
   wrap.innerHTML = `
     <div class="sm:col-span-2">
       <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Diagnostic tests (indicative pricing)</p>
-      <div class="grid gap-2 sm:grid-cols-2">${testCards}</div>
+      <div class="grid gap-2 sm:grid-cols-2" id="medicalTestsGrid">${testCards}</div>
     </div>
     <div class="sm:col-span-2">
       <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Medical facilities</p>
@@ -240,6 +241,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (yearSpan) yearSpan.textContent = new Date().getFullYear().toString();
 
   const h = getSelectedHospital();
+  currentHospital = h;
   if (!h) {
     setText("hospitalName", "Hospital not found");
     setText(
@@ -351,6 +353,153 @@ document.addEventListener("DOMContentLoaded", () => {
   buildFacilities(h);
   buildBedTable(h);
   buildMedicalTestsAndFacilities(h);
+  buildDoctorsSection(h);
   initMapForHospital(h);
+
+  document.getElementById("medicalTestsWrapper")?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-book-test]");
+    if (btn) {
+      openBookModal("test", {
+        testName: btn.getAttribute("data-book-test"),
+        fee: parseInt(btn.getAttribute("data-book-test-fee") || "0", 10)
+      });
+    }
+  });
+
+  document.getElementById("bookModalClose")?.addEventListener("click", closeBookModal);
+  document.getElementById("bookModal")?.addEventListener("click", (e) => {
+    if (e.target.id === "bookModal") closeBookModal();
+  });
+  document.getElementById("bookModalForm")?.addEventListener("submit", submitBookModal);
 });
+
+const TIME_SLOTS = (() => {
+  const s = [];
+  for (let h = 9; h <= 19; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      if (h === 19 && m > 0) break;
+      s.push(`${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`);
+    }
+  }
+  return s;
+})();
+
+let currentHospital = null;
+let bookModalState = { type: null, doctorId: null, doctorName: null, testName: null, fee: 0 };
+
+function openBookModal(type, opts) {
+  const modal = document.getElementById("bookModal");
+  const sub = document.getElementById("bookModalSub");
+  const feeEl = document.getElementById("bookModalFee");
+  const timeSel = document.getElementById("bookModalTime");
+  const dateInp = document.getElementById("bookModalDate");
+  const msgEl = document.getElementById("bookModalMsg");
+  if (!modal || !currentHospital) return;
+  bookModalState = { type, ...opts };
+  if (sub) sub.textContent = type === "doctor" ? `${opts.doctorName} • ${currentHospital.name}` : `${opts.testName} • ${currentHospital.name}`;
+  if (feeEl) feeEl.textContent = `₹${opts.fee || 0}`;
+  if (timeSel) {
+    timeSel.innerHTML = TIME_SLOTS.map((s) => `<option value="${s}">${s}</option>`).join("");
+  }
+  const minDate = new Date().toISOString().slice(0, 10);
+  if (dateInp) dateInp.min = minDate;
+  if (msgEl) msgEl.textContent = "";
+  modal.classList.remove("hidden");
+  modal.classList.add("flex");
+}
+
+function closeBookModal() {
+  const modal = document.getElementById("bookModal");
+  if (modal) {
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+  }
+}
+
+async function submitBookModal(e) {
+  e.preventDefault();
+  const patient = (() => {
+    try {
+      const p = localStorage.getItem("carefinder_patient");
+      return p ? JSON.parse(p) : null;
+    } catch { return null; }
+  })();
+  if (!patient) {
+    const msg = document.getElementById("bookModalMsg");
+    if (msg) { msg.textContent = "Please log in as a patient first."; msg.className = "text-xs text-rose-600"; }
+    setTimeout(() => { window.location.href = "./patient.html?redirect=hospital"; }, 1500);
+    return;
+  }
+  const date = document.getElementById("bookModalDate")?.value;
+  const time = document.getElementById("bookModalTime")?.value;
+  if (!date || !time) return;
+  const btn = document.getElementById("bookModalSubmit");
+  if (btn) btn.disabled = true;
+  const msgEl = document.getElementById("bookModalMsg");
+  try {
+    const body = {
+      patientId: patient.id,
+      type: bookModalState.type,
+      doctorId: bookModalState.type === "doctor" ? bookModalState.doctorId : null,
+      testName: bookModalState.type === "test" ? bookModalState.testName : null,
+      hospitalName: currentHospital.name,
+      appointmentDate: date,
+      appointmentTime: time,
+      fee: bookModalState.fee
+    };
+    const res = await fetch("http://localhost:4000/api/appointments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Booking failed");
+    const apt = { ...data.appointment, bookedAt: new Date().toISOString() };
+    sessionStorage.setItem("carefinder_last_booking", JSON.stringify(apt));
+    window.location.href = "./booking-confirmation.html";
+  } catch (err) {
+    if (msgEl) { msgEl.textContent = err.message || "Booking failed"; msgEl.className = "text-xs text-rose-600"; }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function buildDoctorsSection(h) {
+  const wrap = document.getElementById("doctorsWrapper");
+  if (!wrap) return;
+  try {
+    const res = await fetch("http://localhost:4000/api/doctors");
+    const data = await res.json();
+    const doctors = data.doctors || [];
+    const list = doctors.slice(0, 12);
+    wrap.innerHTML = list.length
+      ? list
+          .map(
+            (d) => `
+          <div class="flex gap-3 rounded-xl border border-slate-100 bg-slate-50/80 p-3">
+            <img src="${escapeHtml(d.img)}" alt="" class="h-12 w-12 shrink-0 rounded-lg object-cover" />
+            <div class="min-w-0 flex-1">
+              <p class="text-xs font-semibold text-slate-900">${escapeHtml(d.name)}</p>
+              <p class="text-[11px] text-slate-600">${escapeHtml(d.specialty)} • ${d.experience} yrs</p>
+              <p class="text-[11px] font-medium text-calm-700">₹${d.fee}</p>
+              <button type="button" class="mt-2 rounded-lg bg-calm-600 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-calm-700" data-book-doctor-id="${escapeHtml(d.id)}" data-book-doctor-name="${escapeHtml(d.name)}" data-book-doctor-fee="${d.fee}">Book appointment</button>
+            </div>
+          </div>
+        `
+          )
+          .join("")
+      : '<p class="col-span-full text-[11px] text-slate-500">Doctor list not available.</p>';
+    wrap.querySelectorAll("[data-book-doctor-id]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        openBookModal("doctor", {
+          doctorId: btn.getAttribute("data-book-doctor-id"),
+          doctorName: btn.getAttribute("data-book-doctor-name"),
+          fee: parseInt(btn.getAttribute("data-book-doctor-fee") || "0", 10)
+        });
+      });
+    });
+  } catch (e) {
+    wrap.innerHTML = '<p class="col-span-full text-[11px] text-slate-500">Doctor list not available.</p>';
+  }
+}
 
