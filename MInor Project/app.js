@@ -14,11 +14,13 @@ const els = {
   filterEmergency: document.getElementById("filterEmergency"),
   filterIcu: document.getElementById("filterIcu"),
   filter24x7: document.getElementById("filter24x7"),
+  testCostRange: document.getElementById("testCostRange"),
   coordPill: document.getElementById("coordPill"),
   coordHint: document.getElementById("coordHint"),
   statusBadge: document.getElementById("statusBadge"),
   resultsMeta: document.getElementById("resultsMeta"),
   cards: document.getElementById("cards"),
+  aiRecommendations: document.getElementById("aiRecommendations"),
   emptyState: document.getElementById("emptyState"),
   hospitalSearch: document.getElementById("hospitalSearch"),
   resultsSkeleton: document.getElementById("resultsSkeleton")
@@ -174,6 +176,12 @@ function demoRatingAndReviews(osmId) {
   return { rating: Math.min(5, Math.max(1, rating)), reviewCount };
 }
 
+function demoAvgTestCost(osmId) {
+  const numeric = Number(String(osmId || "").replace(/[^\d]/g, "")) || 112233;
+  const rand = mulberry32(numeric + 77);
+  return Math.floor(600 + rand() * 4400); // 600 - 5000 INR
+}
+
 function badgeForBeds(available) {
   if (available <= 0) return { text: "No beds", cls: "bg-rose-100 text-rose-900" };
   if (available <= 4) return { text: "Limited", cls: "bg-amber-100 text-amber-900" };
@@ -234,7 +242,7 @@ async function loadBedAvailabilityForHospitals(hospitals) {
       const bedCategories = buildBedCategoriesForHospital(h, beds);
       const { rating, reviewCount } = demoRatingAndReviews(h.id);
       const rand = mulberry32(Number(String(h.id || "").replace(/[^\d]/g, "")) || 999);
-      return { ...h, beds, bedCategories, rating, reviewCount, open24x7: rand() > 0.15 };
+      return { ...h, beds, bedCategories, rating, reviewCount, open24x7: rand() > 0.15, avgTestCost: demoAvgTestCost(h.id) };
     });
   }
 
@@ -282,7 +290,8 @@ async function loadBedAvailabilityForHospitals(hospitals) {
           bedCategories: buildBedCategoriesForHospital(h, beds),
           rating,
           reviewCount,
-          open24x7: rand() > 0.15
+          open24x7: rand() > 0.15,
+          avgTestCost: demoAvgTestCost(h.id)
         };
       }
       const beds = demoBedAvailability(h.id);
@@ -292,7 +301,8 @@ async function loadBedAvailabilityForHospitals(hospitals) {
         bedCategories: buildBedCategoriesForHospital(h, beds),
         rating,
         reviewCount,
-        open24x7: rand() > 0.15
+        open24x7: rand() > 0.15,
+        avgTestCost: demoAvgTestCost(h.id)
       };
     });
   } catch (e) {
@@ -303,7 +313,7 @@ async function loadBedAvailabilityForHospitals(hospitals) {
       const bedCategories = buildBedCategoriesForHospital(h, beds);
       const { rating, reviewCount } = demoRatingAndReviews(h.id);
       const rand = mulberry32(Number(String(h.id || "").replace(/[^\d]/g, "")) || 999);
-      return { ...h, beds, bedCategories, rating, reviewCount, open24x7: rand() > 0.15 };
+      return { ...h, beds, bedCategories, rating, reviewCount, open24x7: rand() > 0.15, avgTestCost: demoAvgTestCost(h.id) };
     });
   }
 }
@@ -552,10 +562,8 @@ function renderCards(hospitals) {
           <div class="mt-1 text-xl font-semibold text-slate-900">${b.capacity}</div>
         </div>
         <div class="rounded-xl bg-slate-50 p-3">
-          <div class="text-xs font-medium text-slate-600">Coordinates</div>
-          <div class="mt-1 text-sm font-semibold text-slate-900">${h.lat.toFixed(5)}, ${h.lon.toFixed(
-      5
-    )}</div>
+          <div class="text-xs font-medium text-slate-600">Avg. test cost</div>
+          <div class="mt-1 text-sm font-semibold text-slate-900">₹${Number(h.avgTestCost || 0).toLocaleString("en-IN")}</div>
         </div>
       </div>
 
@@ -623,6 +631,48 @@ function renderCards(hospitals) {
   });
 }
 
+function renderAiRecommendations() {
+  if (!els.aiRecommendations || !state.center) return;
+  const candidates = state.filtered.slice();
+  if (!candidates.length) {
+    els.aiRecommendations.innerHTML = "";
+    return;
+  }
+  const ranked = candidates
+    .map((h) => {
+      const ratingScore = (h.rating || 3) / 5;
+      const bedScore = Math.min(1, (h.beds?.available || 0) / 30);
+      const distanceScore = Math.max(0, 1 - (h.distanceKm || 0) / 15);
+      const emergencyBoost = h.beds?.emergency ? 0.08 : 0;
+      const score = ratingScore * 0.4 + bedScore * 0.3 + distanceScore * 0.22 + emergencyBoost;
+      return { h, score };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+
+  els.aiRecommendations.innerHTML = `
+    <div class="rounded-2xl border border-fuchsia-100 bg-fuchsia-50/60 p-4">
+      <div class="text-xs font-semibold uppercase tracking-[0.14em] text-fuchsia-700">AI recommendation</div>
+      <h3 class="mt-1 text-sm font-semibold text-slate-900">Top 3 hospitals for this area</h3>
+      <div class="mt-3 grid gap-2">
+        ${ranked
+          .map(
+            ({ h, score }, idx) => `
+          <div class="rounded-xl bg-white/80 p-3 ring-1 ring-fuchsia-100">
+            <div class="flex items-center justify-between gap-2">
+              <p class="text-sm font-semibold text-slate-900">${idx + 1}. ${escapeHtml(h.name)}</p>
+              <span class="text-[11px] font-medium text-fuchsia-700">AI score ${(score * 100).toFixed(0)}%</span>
+            </div>
+            <p class="mt-1 text-xs text-slate-600">${h.distanceKm.toFixed(2)} km • ★ ${(h.rating || 0).toFixed(1)} • Beds ${h.beds?.available || 0}</p>
+          </div>
+        `
+          )
+          .join("")}
+      </div>
+    </div>
+  `;
+}
+
 function applyFiltersAndRender() {
   const minBeds = Number(els.minBeds.value || 0);
   const minRating = Number(els.minRating?.value || 0);
@@ -631,6 +681,7 @@ function applyFiltersAndRender() {
   const emergencyOnly = els.filterEmergency?.checked || false;
   const hasIcuOnly = els.filterIcu?.checked || false;
   const open24x7Only = els.filter24x7?.checked || false;
+  const testCost = els.testCostRange?.value || "any";
 
   let items = state.hospitals.slice();
 
@@ -640,6 +691,15 @@ function applyFiltersAndRender() {
   if (emergencyOnly) items = items.filter((h) => h.beds.emergency);
   if (hasIcuOnly) items = items.filter((h) => (h.beds.icu || 0) > 0);
   if (open24x7Only) items = items.filter((h) => h.open24x7);
+  if (testCost !== "any") {
+    items = items.filter((h) => {
+      const c = Number(h.avgTestCost || 0);
+      if (testCost === "low") return c < 1500;
+      if (testCost === "mid") return c >= 1500 && c <= 3000;
+      if (testCost === "high") return c > 3000;
+      return true;
+    });
+  }
 
   if (sortBy === "beds") {
     items.sort((a, b) => b.beds.available - a.beds.available || a.distanceKm - b.distanceKm);
@@ -654,6 +714,7 @@ function applyFiltersAndRender() {
   state.filtered = items;
   renderCards(items);
   renderMarkers(items);
+  renderAiRecommendations();
 
   if (!state.center) {
     els.resultsMeta.textContent = "No search yet.";
@@ -936,7 +997,7 @@ function wireEvents() {
   });
 
   if (els.radius) els.radius.addEventListener("change", () => refreshHospitals());
-  [els.minBeds, els.minRating, els.sortBy].forEach((el) => {
+  [els.minBeds, els.minRating, els.sortBy, els.testCostRange].forEach((el) => {
     if (el) el.addEventListener("change", () => applyFiltersAndRender());
   });
   [els.filterEmergency, els.filterIcu, els.filter24x7].forEach((el) => {

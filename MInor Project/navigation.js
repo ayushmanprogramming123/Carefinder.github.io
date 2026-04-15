@@ -28,6 +28,39 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Global visual polish: light load animations + vibrant accents.
+  const styleId = "carefinder-global-effects";
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement("style");
+    style.id = styleId;
+    style.textContent = `
+      :root { --cf-accent: #06b6d4; --cf-accent-2: #7c3aed; }
+      @keyframes cfFadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      [data-cf-animate] { opacity: 0; animation: cfFadeUp .55s ease forwards; }
+      [data-cf-animate][data-cf-delay="1"] { animation-delay: .06s; }
+      [data-cf-animate][data-cf-delay="2"] { animation-delay: .12s; }
+      [data-cf-animate][data-cf-delay="3"] { animation-delay: .18s; }
+      button, a, input, select, textarea, article, section, .rounded-2xl, .rounded-xl {
+        transition: transform .2s ease, box-shadow .2s ease, filter .2s ease, background-color .2s ease;
+      }
+      article:hover, section:hover, .rounded-2xl:hover, .rounded-xl:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 24px rgba(8, 47, 73, .08);
+      }
+      .bg-calm-600 { background-color: #0891b2 !important; }
+      .bg-calm-700 { background-color: #0e7490 !important; }
+      .text-calm-700 { color: #0e7490 !important; }
+      .text-calm-800 { color: #155e75 !important; }
+    `;
+    document.head.appendChild(style);
+  }
+
+  const animated = document.querySelectorAll("main > section, main .rounded-2xl, main h1, main h2");
+  animated.forEach((el, idx) => {
+    el.setAttribute("data-cf-animate", "1");
+    el.setAttribute("data-cf-delay", String(Math.min(3, idx % 4)));
+  });
+
   if (!menuButton || !drawer || !overlay) return;
 
   const openDrawer = () => {
